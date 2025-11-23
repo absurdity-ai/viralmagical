@@ -56,4 +56,13 @@ $image_apps = [
         'prompt_template' => "An artistic collage poster featuring [element1] and [element2]. Style inspired by [style]. Mixed media, creative composition."
     ]
 ];
+
+// Load custom apps
+$customAppsFile = __DIR__ . '/custom_apps.json';
+if (file_exists($customAppsFile)) {
+    $customApps = json_decode(file_get_contents($customAppsFile), true);
+    if ($customApps) {
+        $image_apps = array_merge($image_apps, $customApps);
+    }
+}
 ?>

@@ -118,7 +118,7 @@ if ($app_id && isset($image_apps[$app_id])) {
     $app = $image_apps[$app_id];
     
     // Determine Sponsor Mode
-    $allowed_modes = $app['allowed_sponsor_modes'];
+    $allowed_modes = $app['allowed_sponsor_modes'] ?? ['ambient_prop', 'panel_cameo'];
     $sponsor_modes = $sponsor_data['modes'];
     $valid_modes = array_intersect($allowed_modes, $sponsor_modes);
     
@@ -135,7 +135,7 @@ if ($app_id && isset($image_apps[$app_id])) {
     $sponsor_prompt_text = str_replace('image S', 'image 1', $raw_sponsor_prompt);
     
     // Build Main Prompt
-    $template = $app['prompt_template'];
+    $template = $app['prompt_template'] ?? ($app['prompts'][0] ?? "");
     
     // Replace placeholders with Image References
     // Slot 1 -> User Image 1 -> Image 2

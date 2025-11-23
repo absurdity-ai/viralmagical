@@ -197,8 +197,8 @@ Free forever.</span></h1>
                 </div>
 
                 <div style="margin-top: 3rem; text-align: center;">
-                    <a href="/create-app" style="color: rgba(255,255,255,0.5); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 2px;">
-                        ✨ Advanced: build your own app / custom JSON
+                    <a href="/create-generator" style="color: rgba(255,255,255,0.5); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 2px;">
+                        ✨ <strong>New:</strong> Forge your own App Generator
                     </a>
                 </div>
             </section>
