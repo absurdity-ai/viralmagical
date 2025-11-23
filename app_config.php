@@ -40,7 +40,7 @@ $image_apps = [
             ['slot' => 2, 'role' => 'clothing', 'label' => 'Clothing Reference', 'required' => true],
         ],
         'allowed_sponsor_modes' => ['ambient_prop'], // Can't wear sponsor if trying on other clothes usually, or maybe yes? keeping it simple.
-        'prompt_template' => "A photo of [character] wearing [clothing]. Fashion photography, professional lighting."
+        'prompt_template' => "A photo of [character] wearing [clothing]. Fashion photography, professional lighting. Render the full body clearly with correct proportions."
     ],
     'collage' => [
         'id'   => 'collage',

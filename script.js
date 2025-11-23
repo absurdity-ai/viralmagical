@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modalStatus.textContent = 'Uploading images and generating your creation...';
 
-            const response = await fetch('api/create.php', {
+            const response = await fetch('/api/create.php', {
                 method: 'POST',
                 body: formData
             });
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadGallery() {
         try {
-            const response = await fetch('api/get_apps.php?user_id=' + userId);
+            const response = await fetch('/api/get_apps.php?user_id=' + userId);
             const data = await response.json();
 
             // Only show skeletons if gallery is empty (initial load)

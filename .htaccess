@@ -8,6 +8,9 @@ RewriteRule ^app/([a-zA-Z0-9]+)$ app.php?id=$1 [L,QSA]
 RewriteRule ^dashboard$ dashboard.php [L]
 RewriteRule ^create-app$ index-create-open.php [L]
 
+# Pretty URL for loading apps: /load/{app_id} -> index.php?app={app_id}
+RewriteRule ^load/([a-zA-Z0-9_]+)$ index.php?app=$1 [L,QSA]
+
 # Remove .php extension for any file
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f

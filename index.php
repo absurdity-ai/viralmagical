@@ -15,7 +15,7 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <style>
         .app-grid {
             display: grid;
@@ -185,7 +185,7 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
                 
                 <div class="app-grid">
                     <?php foreach ($image_apps as $app): ?>
-                        <a href="?app=<?php echo $app['id']; ?>" class="app-card">
+                        <a href="/load/<?php echo $app['id']; ?>" class="app-card">
                             <div class="app-icon"><?php echo $app['icon']; ?></div>
                             <div class="app-name"><?php echo htmlspecialchars($app['name']); ?></div>
                             <div class="app-desc"><?php echo htmlspecialchars($app['description']); ?></div>
@@ -233,6 +233,6 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
 
     <script src="https://cdn.jsdelivr.net/npm/heic-to@1.3.0/dist/iife/heic-to.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
-    <script src="script.js?v=<?php echo filemtime('script.js'); ?>"></script>
+    <script src="/script.js?v=<?php echo filemtime('script.js'); ?>"></script>
 </body>
 </html>
