@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewImg = document.getElementById('previewImg');
     const clearImageBtn = document.getElementById('clearImageBtn');
 
-    let selectedSponsor = 'cola';
+    let selectedSponsor = 'can';
     let selectedImageFiles = []; // Array to store processed images
-    const MAX_IMAGES = 8;
+    const MAX_IMAGES = 7;
     const MAX_FILE_SIZE_MB = 1;
 
     // Image Input Change - Handle Multiple Images
@@ -161,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalClose = document.getElementById('modalClose');
 
         modal.classList.remove('hidden');
+        document.querySelector('.progress-spinner').classList.remove('hidden');
         modalStatus.textContent = 'Processing your images...';
         modalResult.classList.add('hidden');
         modalClose.classList.add('hidden');
@@ -210,11 +211,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 `;
+                // Hide spinner
+                document.querySelector('.progress-spinner').classList.add('hidden');
+
                 modalResult.classList.remove('hidden');
                 modalClose.classList.remove('hidden');
 
                 // Add to gallery
-                addGalleryItem(data.app);
+                addGalleryItem(data.app, true);
 
                 // Clear form
                 promptInput.value = '';
@@ -222,6 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 imagePreview.innerHTML = '';
                 imagePreview.classList.add('hidden');
             } else {
+                // Hide spinner
+                document.querySelector('.progress-spinner').classList.add('hidden');
+
                 modalStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
                 modalClose.classList.remove('hidden');
                 modalClose.textContent = 'Close';
@@ -272,54 +279,66 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('api/get_apps.php?user_id=' + userId);
             const data = await response.json();
 
-            // Always fade out skeletons first
-            const skeletons = galleryGrid.querySelectorAll('.skeleton');
-            if (skeletons.length > 0) {
-                skeletons.forEach(skeleton => {
-                    skeleton.style.opacity = '0';
-                    skeleton.style.transition = 'opacity 0.3s ease';
-                });
+            // Only show skeletons if gallery is empty (initial load)
+            if (galleryGrid.children.length === 0 || galleryGrid.querySelector('.skeleton')) {
+                const skeletons = galleryGrid.querySelectorAll('.skeleton');
+                if (skeletons.length > 0) {
+                    skeletons.forEach(skeleton => {
+                        skeleton.style.opacity = '0';
+                        skeleton.style.transition = 'opacity 0.3s ease';
+                    });
 
-                // Wait for fade out, then replace content
-                setTimeout(() => {
-                    if (data.success && data.apps.length > 0) {
-                        galleryGrid.innerHTML = ''; // Clear skeletons
-                        data.apps.forEach(app => addGalleryItem(app));
-                    } else {
-                        galleryGrid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; opacity: 0.7;">No magic created yet. Be the first!</p>';
-                    }
-                }, 300);
-            } else {
-                // No skeletons, just update content immediately
-                if (data.success && data.apps.length > 0) {
-                    galleryGrid.innerHTML = '';
-                    data.apps.forEach(app => addGalleryItem(app));
+                    // Wait for fade out, then replace content
+                    setTimeout(() => {
+                        updateGalleryContent(data);
+                    }, 300);
                 } else {
-                    galleryGrid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; opacity: 0.7;">No magic created yet. Be the first!</p>';
+                    updateGalleryContent(data);
                 }
+            } else {
+                // Background update - no skeletons, just prepend new items or replace if needed
+                // For simplicity, we'll just replace content to ensure order, but without the skeleton flash
+                updateGalleryContent(data);
             }
         } catch (error) {
             console.error('Error loading gallery:', error);
-            // Clear skeletons even on error
-            galleryGrid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; opacity: 0.7; color: #ff6b6b;">Failed to load gallery. Please refresh.</p>';
+            if (galleryGrid.children.length === 0 || galleryGrid.querySelector('.skeleton')) {
+                galleryGrid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; opacity: 0.7; color: #ff6b6b;">Failed to load gallery. Please refresh.</p>';
+            }
         }
     }
 
-    function addGalleryItem(app) {
+    function updateGalleryContent(data) {
+        if (data.success && data.apps.length > 0) {
+            galleryGrid.innerHTML = ''; // Clear existing content
+            data.apps.forEach(app => addGalleryItem(app, false)); // Append for initial load
+        } else {
+            galleryGrid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; opacity: 0.7;">No magic created yet. Be the first!</p>';
+        }
+    }
+
+    function addGalleryItem(app, prepend = false) {
         const item = document.createElement('div');
         item.className = 'gallery-item glass-panel';
-        const shareUrl = app.short_code ? `app/${app.short_code}` : '#';
+        const shareUrl = app.share_url ? app.share_url : (app.short_code ? `app/${app.short_code}` : '#');
+
+        // Use sponsor_name if available, fallback to sponsor code
+        const sponsorDisplay = app.sponsor_name || app.sponsor;
 
         item.innerHTML = `
             <a href="${shareUrl}" style="text-decoration:none; color:inherit; display:block; height:100%;">
                 <img src="${app.image_url}" alt="${app.prompt}" loading="lazy">
                 <div class="gallery-overlay">
                     <p style="font-weight:bold; margin-bottom:0.5rem;">${truncate(app.prompt, 50)}</p>
-                    <p style="font-size:0.8rem; opacity:0.8;">Sponsored by ${app.sponsor}</p>
+                    <p style="font-size:0.8rem; opacity:0.8;">Sponsored by ${sponsorDisplay}</p>
                 </div>
             </a>
         `;
-        galleryGrid.prepend(item);
+        if (prepend && galleryGrid.firstChild) {
+            galleryGrid.insertBefore(item, galleryGrid.firstChild);
+        } else {
+            galleryGrid.appendChild(item);
+        }
     }
 
     function truncate(str, n) {

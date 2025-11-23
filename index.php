@@ -52,17 +52,23 @@
                 <div class="sponsor-selection">
                     <label>Choose your product sponsor to fund this creation:</label>
                     <div class="sponsor-options">
-                        <div class="sponsor-card selected" data-sponsor="cola">
-                            <div class="sponsor-icon">🥤</div>
-                            <span>Generic Cola</span>
+                        <div class="sponsor-card selected" data-sponsor="can">
+                            <div class="sponsor-icon">
+                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/la-croix.png" alt="La Croix">
+                            </div>
+                            <span>La Croix</span>
                         </div>
-                        <div class="sponsor-card" data-sponsor="sneakers">
-                            <div class="sponsor-icon">👟</div>
-                            <span>Fast Sneakers</span>
+                        <div class="sponsor-card" data-sponsor="keycap">
+                            <div class="sponsor-icon">
+                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/claude-key.png" alt="Keycap">
+                            </div>
+                            <span>Keycap</span>
                         </div>
-                        <div class="sponsor-card" data-sponsor="burger">
-                            <div class="sponsor-icon">🍔</div>
-                            <span>Mega Burger</span>
+                        <div class="sponsor-card" data-sponsor="hat">
+                            <div class="sponsor-icon">
+                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/bfl-fal-hat.png" alt="Hat">
+                            </div>
+                            <span>Hat</span>
                         </div>
                     </div>
                 </div>

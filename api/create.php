@@ -90,31 +90,71 @@ if (!empty($_FILES['images']['name'][0])) {
 
 
 // Sponsor prompt injection
-$sponsor_prompts = [
-    'cola' => 'holding a can of Generic Cola, red and white branding',
-    'sneakers' => 'wearing Fast Sneakers, dynamic sporty footwear',
-    'burger' => 'eating a Mega Burger, delicious fast food'
+// Sponsor prompt injection
+// Sponsor prompt injection
+require_once '../sponsor_config.php';
+
+$sponsor_data = $sponsor_prompts[$sponsor] ?? $sponsor_prompts['can'];
+$sponsor_text = $sponsor_data['text'];
+$sponsor_image = $sponsor_data['image'];
+
+// Flux-optimized prompt structure (JSON)
+$prompt_structure = [
+    "scene" => $prompt,
+    "subjects" => [
+        [
+            "description" => "The primary subject or character of the scene, captured naturally",
+            "role" => "primary",
+            "pose" => "whatever fits the moment organically",
+            "placement" => "central or context-relevant"
+        ]
+    ],
+    "objects" => [
+        [
+            "description" => $sponsor_text,
+            "source_image" => "image 1",
+            "role" => $sponsor_data['role'] ?? "secondary product",
+            "placement" => $sponsor_data['placement'] ?? "context-aware, scale-accurate, consistent with lighting and materials"
+        ]
+    ],
+    "style" => "photorealistic cinematic",
+    "lighting" => "natural and believable, matching the scene",
+    "composition" => "harmonious, coherent, non-dominant product integration",
+    "camera" => [
+        "lens-mm" => 50,
+        "depth-of-field" => "shallow",
+        "focus" => "sharp on subject"
+    ],
+    "resolution" => "high"
 ];
-$sponsor_text = $sponsor_prompts[$sponsor] ?? '';
-$full_prompt = "$prompt, $sponsor_text, high quality, photorealistic, cinematic lighting";
+
+$full_prompt = json_encode($prompt_structure);
 
 // Call FAL.AI API
 $fal_key = getenv('FAL_KEY');
 
 // Determine Model and Data
-if (!empty($image_urls_input)) {
-    // Image Edit Mode
+if (!empty($image_urls_input) || !empty($sponsor_image)) {
+    // Image Edit Mode (Flux Edit)
     $api_url = "https://queue.fal.run/fal-ai/alpha-image-232/edit-image";
+    
+    // Prepend sponsor image as the first image (image1)
+    array_unshift($image_urls_input, $sponsor_image);
+    
     $data = [
         "prompt" => $full_prompt,
         "image_urls" => $image_urls_input,
         "image_size" => "landscape_4_3",
         "num_inference_steps" => 28,
         "guidance_scale" => 3.5,
-        "strength" => 0.85 // Adjust strength as needed for edit
+        "strength" => 0.85 
     ];
 } else {
-    // Text-to-Image Mode
+    // Text-to-Image Mode (Flux Dev/Pro)
+    // Note: If we always want sponsor product placement, we should probably ALWAYS use edit mode 
+    // with the sponsor image, even if user didn't upload their own.
+    // But for now, let's keep the fallback if something goes wrong with images.
+    
     $api_url = "https://queue.fal.run/fal-ai/beta-image-232";
     $data = [
         "prompt" => $full_prompt,
@@ -155,7 +195,7 @@ if (!$request_id) {
 
 // 2. Poll for result
 $attempts = 0;
-$max_attempts = 30;
+$max_attempts = 120; // Increased to 120s to prevent timeouts
 $image_url = '';
 
 while ($attempts < $max_attempts) {
@@ -239,8 +279,8 @@ $app_uuid = generateUUID();
 
 // Store in DB
 try {
-    $stmt = $pdo->prepare("INSERT INTO apps (uuid, prompt, image_url, sponsor, short_code, user_id) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$app_uuid, $prompt, $image_url, $sponsor, $short_code, $user_id]);
+    $stmt = $pdo->prepare("INSERT INTO apps (uuid, prompt, image_url, sponsor, short_code, user_id, full_prompt) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$app_uuid, $prompt, $image_url, $sponsor, $short_code, $user_id, $full_prompt]);
     
     echo json_encode([
         'success' => true,
@@ -250,7 +290,7 @@ try {
             'image_url' => $image_url,
             'sponsor' => $sponsor,
             'short_code' => $short_code,
-            'share_url' => "http://" . $_SERVER['HTTP_HOST'] . "/app/" . $short_code
+            'share_url' => "https://" . $_SERVER['HTTP_HOST'] . "/app/" . $short_code
         ]
     ]);
 } catch (Exception $e) {
