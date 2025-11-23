@@ -113,8 +113,8 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
             <span class="vm-logo">VM</span> ViralMagical
         </div>
         <nav>
-            <a href="index.php" class="nav-link">Apps</a>
-            <a href="index-create-open.php" class="nav-link">Advanced</a>
+            <a href="/" class="nav-link">Apps</a>
+            <a href="/create-app" class="nav-link">Advanced</a>
         </nav>
     </header>
 
@@ -122,7 +122,7 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
         <?php if ($current_app): ?>
             <!-- APP CREATION MODE -->
             <section class="hero">
-                <a href="index.php" class="back-link">← Back to Apps</a>
+                <a href="/" class="back-link">← Back to Apps</a>
                 <h1><?php echo htmlspecialchars($current_app['name']); ?></h1>
                 <p class="subtitle"><?php echo htmlspecialchars($current_app['description']); ?></p>
                 
@@ -180,8 +180,10 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
         <?php else: ?>
             <!-- GALLERY MODE -->
             <section class="hero" style="min-height: auto; padding-bottom: 2rem;">
-                <h1>Magic Apps<br><span class="highlight">Create with one click.</span></h1>
-                <p class="subtitle">Choose an app to start creating. No prompting required.</p>
+                <h1>Viral Image Apps<br><span class="highlight">Create with one click.</span><span class="highlight">
+You choose the sponsor.</span><span class="highlight">
+Free forever.</span></h1>
+                <p class="subtitle">Pick an app. No prompting. You own everything you create.</p>
                 
                 <div class="app-grid">
                     <?php foreach ($image_apps as $app): ?>
@@ -195,21 +197,14 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
                 </div>
 
                 <div style="margin-top: 3rem; text-align: center;">
-                    <a href="index-create-open.php" style="color: rgba(255,255,255,0.5); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 2px;">
+                    <a href="/create-app" style="color: rgba(255,255,255,0.5); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 2px;">
                         ✨ Advanced: build your own app / custom JSON
                     </a>
                 </div>
             </section>
         <?php endif; ?>
 
-        <section class="gallery-section">
-            <h2>Recent Creations</h2>
-            <div id="galleryGrid" class="gallery-grid">
-                <div class="gallery-item glass-panel skeleton"></div>
-                <div class="gallery-item glass-panel skeleton"></div>
-                <div class="gallery-item glass-panel skeleton"></div>
-            </div>
-        </section>
+        <?php include 'includes/gallery_section.php'; ?>
     </main>
 
     <!-- Creation Progress Modal (Same as before) -->

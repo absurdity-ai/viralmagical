@@ -131,7 +131,18 @@ if (!$app) {
             </div>
             
             <div class="action-buttons">
-                <a href="/create-app?remix=<?php echo urlencode($app['prompt']); ?>" class="btn btn-primary">
+                <?php
+                $remixUrl = "/create-app?remix=" . urlencode($app['prompt']);
+                if (!empty($app['input_images'])) {
+                    $inputImages = json_decode($app['input_images'], true);
+                    if (is_array($inputImages)) {
+                        foreach ($inputImages as $imgUrl) {
+                            $remixUrl .= "&images[]=" . urlencode($imgUrl);
+                        }
+                    }
+                }
+                ?>
+                <a href="<?php echo $remixUrl; ?>" class="btn btn-primary">
                     <span>🎨 Remix this Style</span>
                 </a>
                 <a href="/index.php" class="btn btn-secondary">

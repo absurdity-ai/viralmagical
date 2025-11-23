@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const promptInput = document.getElementById('promptInput');
     const createBtn = document.getElementById('createBtn');
-    const btnText = createBtn.querySelector('.btn-text');
-    const loader = createBtn.querySelector('.loader');
+    const btnText = createBtn ? createBtn.querySelector('.btn-text') : null;
+    const loader = createBtn ? createBtn.querySelector('.loader') : null;
     const sponsorCards = document.querySelectorAll('.sponsor-card');
     const galleryGrid = document.getElementById('galleryGrid');
 
@@ -18,88 +18,90 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_FILE_SIZE_MB = 1;
 
     // Image Input Change - Handle Multiple Images
-    imageInput.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
+    if (imageInput) {
+        imageInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
 
-        if (files.length + selectedImageFiles.length > MAX_IMAGES) {
-            alert(`You can only upload up to ${MAX_IMAGES} images.`);
-            return;
-        }
-
-        for (const file of files) {
-            try {
-                let processedFile = file;
-
-                // Convert HEIC to JPEG if needed
-                if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-                    console.log('Attempting HEIC to JPEG conversion for:', file.name, 'Type:', file.type, 'Size:', file.size);
-
-                    // Capture original filename before conversion
-                    const originalFilename = file.name || `heic_${Date.now()}`;
-
-                    // Check if HeicTo is available (note: capital H)
-                    if (typeof window.HeicTo === 'undefined') {
-                        console.error('HeicTo library not loaded!');
-                        alert('HEIC conversion library not available. Please refresh the page or convert to JPG/PNG first.');
-                        continue; // Skip this file
-                    }
-
-                    try {
-                        const convertedBlob = await window.HeicTo({
-                            blob: file,
-                            type: 'image/jpeg',
-                            quality: 0.9
-                        });
-
-                        if (!convertedBlob) {
-                            throw new Error('HEIC conversion returned empty blob');
-                        }
-
-                        // Generate proper filename from original
-                        let newFilename;
-                        if (!originalFilename || originalFilename === 'blob') {
-                            newFilename = `heic_converted_${Date.now()}.jpg`;
-                        } else {
-                            newFilename = originalFilename.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
-                        }
-
-                        processedFile = new File([convertedBlob], newFilename, { type: 'image/jpeg' });
-                        console.log('HEIC conversion successful, new file:', processedFile.name);
-
-                    } catch (conversionError) {
-                        console.error('Error during HEIC conversion:', conversionError);
-                        alert(`Failed to convert HEIC: ${conversionError.message}. Please convert to JPG/PNG first.`);
-                        continue; // Skip this file
-                    }
-                }
-
-                // Compress image to max 1MB
-                const options = {
-                    maxSizeMB: MAX_FILE_SIZE_MB,
-                    maxWidthOrHeight: 2048,
-                    useWebWorker: true
-                };
-
-                const compressedFile = await imageCompression(processedFile, options);
-                console.log(`Compressed from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
-
-                selectedImageFiles.push(compressedFile);
-                addThumbnail(compressedFile);
-
-            } catch (error) {
-                console.error('Error processing image:', error);
-                alert(`Failed to process ${file.name}. Please try another image.`);
+            if (files.length + selectedImageFiles.length > MAX_IMAGES) {
+                alert(`You can only upload up to ${MAX_IMAGES} images.`);
+                return;
             }
-        }
 
-        // Clear input to allow re-selecting same file
-        imageInput.value = '';
+            for (const file of files) {
+                try {
+                    let processedFile = file;
 
-        // Show preview grid
-        if (selectedImageFiles.length > 0) {
-            imagePreview.classList.remove('hidden');
-        }
-    });
+                    // Convert HEIC to JPEG if needed
+                    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                        console.log('Attempting HEIC to JPEG conversion for:', file.name, 'Type:', file.type, 'Size:', file.size);
+
+                        // Capture original filename before conversion
+                        const originalFilename = file.name || `heic_${Date.now()}`;
+
+                        // Check if HeicTo is available (note: capital H)
+                        if (typeof window.HeicTo === 'undefined') {
+                            console.error('HeicTo library not loaded!');
+                            alert('HEIC conversion library not available. Please refresh the page or convert to JPG/PNG first.');
+                            continue; // Skip this file
+                        }
+
+                        try {
+                            const convertedBlob = await window.HeicTo({
+                                blob: file,
+                                type: 'image/jpeg',
+                                quality: 0.9
+                            });
+
+                            if (!convertedBlob) {
+                                throw new Error('HEIC conversion returned empty blob');
+                            }
+
+                            // Generate proper filename from original
+                            let newFilename;
+                            if (!originalFilename || originalFilename === 'blob') {
+                                newFilename = `heic_converted_${Date.now()}.jpg`;
+                            } else {
+                                newFilename = originalFilename.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
+                            }
+
+                            processedFile = new File([convertedBlob], newFilename, { type: 'image/jpeg' });
+                            console.log('HEIC conversion successful, new file:', processedFile.name);
+
+                        } catch (conversionError) {
+                            console.error('Error during HEIC conversion:', conversionError);
+                            alert(`Failed to convert HEIC: ${conversionError.message}. Please convert to JPG/PNG first.`);
+                            continue; // Skip this file
+                        }
+                    }
+
+                    // Compress image to max 1MB
+                    const options = {
+                        maxSizeMB: MAX_FILE_SIZE_MB,
+                        maxWidthOrHeight: 2048,
+                        useWebWorker: true
+                    };
+
+                    const compressedFile = await imageCompression(processedFile, options);
+                    console.log(`Compressed from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+
+                    selectedImageFiles.push(compressedFile);
+                    addThumbnail(compressedFile);
+
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert(`Failed to process ${file.name}. Please try another image.`);
+                }
+            }
+
+            // Clear input to allow re-selecting same file
+            imageInput.value = '';
+
+            // Show preview grid
+            if (selectedImageFiles.length > 0 && imagePreview) {
+                imagePreview.classList.remove('hidden');
+            }
+        });
+    }
 
     // Add thumbnail to preview grid
     function addThumbnail(file) {
@@ -138,128 +140,144 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Sponsor Selection
-    sponsorCards.forEach(card => {
-        card.addEventListener('click', () => {
-            sponsorCards.forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedSponsor = card.dataset.sponsor;
+    if (sponsorCards.length > 0) {
+        sponsorCards.forEach(card => {
+            card.addEventListener('click', () => {
+                sponsorCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedSponsor = card.dataset.sponsor;
+            });
         });
-    });
+    }
 
     // Create Button Click
-    createBtn.addEventListener('click', async () => {
-        const prompt = promptInput.value.trim();
-        if (!prompt && selectedImageFiles.length === 0) {
-            alert('Please describe your idea or upload an image!');
-            return;
-        }
-
-        // Show modal
-        const modal = document.getElementById('creationModal');
-        const modalStatus = document.getElementById('modalStatus');
-        const modalResult = document.getElementById('modalResult');
-        const modalClose = document.getElementById('modalClose');
-
-        modal.classList.remove('hidden');
-        document.querySelector('.progress-spinner').classList.remove('hidden');
-        modalStatus.textContent = 'Processing your images...';
-        modalResult.classList.add('hidden');
-        modalClose.classList.add('hidden');
-
-        // UI Loading State
-        createBtn.disabled = true;
-        btnText.classList.add('hidden');
-        loader.classList.remove('hidden');
-
-        try {
-            const formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('sponsor', selectedSponsor);
-
-            const appIdInput = document.getElementById('appId');
-            if (appIdInput) {
-                formData.append('app_id', appIdInput.value);
+    if (createBtn) {
+        createBtn.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            if (!prompt && selectedImageFiles.length === 0) {
+                alert('Please describe your idea or upload an image!');
+                return;
             }
 
-            // Append all images
-            selectedImageFiles.forEach((file, index) => {
-                formData.append('images[]', file);
-            });
+            // Show modal
+            const modal = document.getElementById('creationModal');
+            const modalStatus = document.getElementById('modalStatus');
+            const modalResult = document.getElementById('modalResult');
+            const modalClose = document.getElementById('modalClose');
 
-            modalStatus.textContent = 'Uploading images and generating your creation...';
+            modal.classList.remove('hidden');
+            document.querySelector('.progress-spinner').classList.remove('hidden');
+            modalStatus.textContent = 'Processing your images...';
+            modalResult.classList.add('hidden');
+            modalClose.classList.add('hidden');
 
-            const response = await fetch('/api/create.php', {
-                method: 'POST',
-                body: formData
-            });
+            // UI Loading State
+            createBtn.disabled = true;
+            btnText.classList.add('hidden');
+            loader.classList.remove('hidden');
 
-            const data = await response.json();
+            try {
+                const formData = new FormData();
+                formData.append('prompt', prompt);
+                formData.append('sponsor', selectedSponsor);
 
-            if (data.success) {
-                modalStatus.textContent = 'Success! Your creation is ready! 🎉';
+                const appIdInput = document.getElementById('appId');
+                if (appIdInput) {
+                    formData.append('app_id', appIdInput.value);
+                }
 
-                // Show result image and share URL in modal
-                const shareUrl = data.app.share_url || `${window.location.origin}/app/${data.app.short_code}`;
-                modalResult.innerHTML = `
-                    <img src="${data.app.image_url}" alt="${data.app.prompt}">
-                    <p style="margin-top: 1rem; opacity: 0.9;">Sponsored by ${data.app.sponsor}</p>
-                    <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 12px;">
-                        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 0.5rem;">Share your creation:</p>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <input type="text" value="${shareUrl}" readonly 
-                                   id="shareUrlInput"
-                                   style="flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9rem;">
-                            <button onclick="navigator.clipboard.writeText('${shareUrl}').then(() => { this.textContent = '✓ Copied!'; setTimeout(() => this.textContent = 'Copy', 2000); })" 
-                                    style="padding: 0.5rem 1rem; background: linear-gradient(45deg, #ff0055, #0055ff); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; white-space: nowrap;">
-                                Copy
-                            </button>
+                // Append all images
+                selectedImageFiles.forEach((file, index) => {
+                    formData.append('images[]', file);
+                    console.log(`Appending image ${index}:`, file.name, file.size, file.type);
+                });
+
+                // Debug: Log FormData entries
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ', ' + pair[1]);
+                }
+
+                modalStatus.textContent = 'Uploading images and generating your creation...';
+
+                const response = await fetch('/api/create.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    modalStatus.textContent = 'Success! Your creation is ready! 🎉';
+
+                    // Show result image and share URL in modal
+                    const shareUrl = data.app.share_url || `${window.location.origin}/app/${data.app.short_code}`;
+                    modalResult.innerHTML = `
+                        <img src="${data.app.image_url}" alt="${data.app.prompt}">
+                        <p style="margin-top: 1rem; opacity: 0.9;">Sponsored by ${data.app.sponsor}</p>
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 12px;">
+                            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 0.5rem;">Share your creation:</p>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" value="${shareUrl}" readonly 
+                                       id="shareUrlInput"
+                                       style="flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9rem;">
+                                <button onclick="navigator.clipboard.writeText('${shareUrl}').then(() => { this.textContent = '✓ Copied!'; setTimeout(() => this.textContent = 'Copy', 2000); })" 
+                                        style="padding: 0.5rem 1rem; background: linear-gradient(45deg, #ff0055, #0055ff); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                                    Copy
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                // Hide spinner
-                document.querySelector('.progress-spinner').classList.add('hidden');
+                    `;
+                    // Hide spinner
+                    document.querySelector('.progress-spinner').classList.add('hidden');
 
-                modalResult.classList.remove('hidden');
-                modalClose.classList.remove('hidden');
+                    modalResult.classList.remove('hidden');
+                    modalClose.classList.remove('hidden');
 
-                // Add to gallery
-                addGalleryItem(data.app, true);
+                    // Add to gallery
+                    addGalleryItem(data.app, true);
 
-                // Clear form
-                promptInput.value = '';
-                selectedImageFiles = [];
-                imagePreview.innerHTML = '';
-                imagePreview.classList.add('hidden');
-            } else {
-                // Hide spinner
-                document.querySelector('.progress-spinner').classList.add('hidden');
+                    // Clear form
+                    promptInput.value = '';
+                    selectedImageFiles = [];
+                    imagePreview.innerHTML = '';
+                    imagePreview.classList.add('hidden');
+                } else {
+                    // Hide spinner
+                    document.querySelector('.progress-spinner').classList.add('hidden');
 
-                modalStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    modalStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    modalClose.classList.remove('hidden');
+                    modalClose.textContent = 'Close';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                modalStatus.textContent = 'Something went wrong. Please try again.';
                 modalClose.classList.remove('hidden');
                 modalClose.textContent = 'Close';
+            } finally {
+                // Reset button UI
+                createBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                loader.classList.add('hidden');
             }
-
-        } catch (error) {
-            console.error('Error:', error);
-            modalStatus.textContent = 'Something went wrong. Please try again.';
-            modalClose.classList.remove('hidden');
-            modalClose.textContent = 'Close';
-        } finally {
-            // Reset button UI
-            createBtn.disabled = false;
-            btnText.classList.remove('hidden');
-            loader.classList.add('hidden');
-        }
-    });
+        });
+    }
 
     // Modal close button
-    document.getElementById('modalClose').addEventListener('click', () => {
-        const modal = document.getElementById('creationModal');
-        modal.classList.add('hidden');
+    const modalCloseBtn = document.getElementById('modalClose');
+    if (modalCloseBtn) {
+        modalCloseBtn.addEventListener('click', () => {
+            const modal = document.getElementById('creationModal');
+            modal.classList.add('hidden');
 
-        // Scroll to gallery
-        document.querySelector('.gallery-section').scrollIntoView({ behavior: 'smooth' });
-    });
+            // Scroll to gallery
+            const gallerySection = document.querySelector('.gallery-section');
+            if (gallerySection) {
+                gallerySection.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
 
     // User ID Management
     let userId = getCookie('vm_user_id');
@@ -271,9 +289,81 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check for remix param
     const urlParams = new URLSearchParams(window.location.search);
     const remixPrompt = urlParams.get('remix');
-    if (remixPrompt) {
+    if (remixPrompt && promptInput) {
         promptInput.value = remixPrompt;
         promptInput.focus();
+    }
+
+    // Check for images param (supports array: ?images[]=url1&images[]=url2)
+    const imageUrls = urlParams.getAll('images[]');
+    // Also support comma-separated string if passed as ?images=url1,url2
+    const imagesStr = urlParams.get('images');
+    if (imagesStr) {
+        imageUrls.push(...imagesStr.split(','));
+    }
+
+    if (imageUrls.length > 0) {
+        processRemoteImages(imageUrls);
+    }
+
+    async function processRemoteImages(urls) {
+        // Show loading state if needed, or just process
+        console.log('Processing remote images:', urls);
+
+        for (const url of urls) {
+            if (!url) continue;
+
+            try {
+                // Use proxy to avoid CORS issues when converting to Blob
+                const proxyUrl = `/api/proxy_image.php?url=${encodeURIComponent(url.trim())}`;
+                const response = await fetch(proxyUrl);
+
+                if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+
+                const blob = await response.blob();
+                // Extract filename from URL or default
+                const filename = url.split('/').pop().split('?')[0] || `remix_image_${Date.now()}.jpg`;
+
+                const file = new File([blob], filename, { type: blob.type });
+
+                // Reuse existing processing logic (compression, thumbnail, etc.)
+                // We can manually trigger the logic or just call a helper if we refactor.
+                // Since the existing logic is inside the 'change' event listener, let's extract the core logic 
+                // or just duplicate the minimal parts needed here. 
+                // Actually, the best way is to push to selectedImageFiles and call addThumbnail directly.
+
+                // Compress image to max 1MB (using the same logic as upload)
+                const options = {
+                    maxSizeMB: MAX_FILE_SIZE_MB,
+                    maxWidthOrHeight: 2048,
+                    useWebWorker: true
+                };
+
+                // We need to ensure imageCompression is available (it's loaded via script tag)
+                // If not, just use original file
+                let fileToAdd = file;
+                if (typeof imageCompression === 'function') {
+                    try {
+                        fileToAdd = await imageCompression(file, options);
+                    } catch (compError) {
+                        console.warn('Compression failed for remote image, using original:', compError);
+                    }
+                }
+
+                if (selectedImageFiles.length < MAX_IMAGES) {
+                    selectedImageFiles.push(fileToAdd);
+                    addThumbnail(fileToAdd);
+                }
+
+            } catch (error) {
+                console.error('Error loading remote image:', error);
+                // Optional: show a toast or non-intrusive error
+            }
+        }
+
+        if (selectedImageFiles.length > 0) {
+            imagePreview.classList.remove('hidden');
+        }
     }
 
     // Load initial gallery

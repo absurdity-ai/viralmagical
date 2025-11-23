@@ -52,6 +52,9 @@ if (strpos($contentType, 'application/json') !== false) {
 // Handle Multiple Image Uploads
 $image_urls_input = [];
 
+error_log("Create API Input: " . json_encode($_POST));
+error_log("Create API Files: " . json_encode($_FILES));
+
 if (!empty($_FILES['images']['name'][0])) {
     $target_dir = "../uploads/";
     if (!file_exists($target_dir)) {
@@ -312,8 +315,8 @@ $app_uuid = generateUUID();
 
 // Store in DB
 try {
-    $stmt = $pdo->prepare("INSERT INTO apps (uuid, prompt, image_url, sponsor, short_code, user_id, full_prompt) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$app_uuid, $final_prompt_text, $image_url, $sponsor_name, $short_code, $user_id, $full_prompt_json]);
+    $stmt = $pdo->prepare("INSERT INTO apps (uuid, prompt, image_url, sponsor, short_code, user_id, full_prompt, input_images) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$app_uuid, $final_prompt_text, $image_url, $sponsor_name, $short_code, $user_id, $full_prompt_json, json_encode($image_urls_input)]);
     
     echo json_encode([
         'success' => true,
