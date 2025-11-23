@@ -31,19 +31,18 @@ $sponsor_prompts = [
         ]
     ],
     'hat' => [
-        'name' => 'BFLxFal',
-        'text' => 'The hat from image 1 is an intentional scene prop. It should be placed naturally in the environment, resting on a flat surface or object in a contextually appropriate way. If and only if a real human subject is clearly identifiable in the scene, that human may wear the hat, fitted correctly above the eyes and ears. The hat should not be worn by animals, sculptures, mannequins, statues, or non-human characters.',
-        'image' => 'https://i.gyazo.com/27b062f7f3e345259915b6f1064390cb.jpg',
-        'image_icon'=>'https://viralmagical.s3.us-east-1.amazonaws.com/icons/bfl-fal-hat.png',
+    'name' => 'BFLxFal',
+    'text' => 'The hat from image 1 is an intentional scene prop. It should be placed naturally in the environment, resting on a flat surface or object in a contextually appropriate way. If and only if a clearly framed primary human subject is intentionally posed in the foreground, that human may wear the hat, fitted correctly above the eyes and ears. The hat must never be worn by animals, incidental background people, crowds, sculptures, mannequins, statues, or non-human characters.',
+    'image' => 'https://i.gyazo.com/27b062f7f3e345259915b6f1064390cb.jpg',
+    'image_icon' => 'https://viralmagical.s3.us-east-1.amazonaws.com/icons/bfl-fal-hat.png',
+    'role' => 'scene prop',
+    'placement' => 'environmental by default, context-aware, scale-accurate, consistent with lighting and materials',
+    'object_config' => [
+        'description' => 'The hat from image 1 placed as a physical object in the environment.',
         'role' => 'scene prop',
-        'placement' => 'environmental by default, context-aware, scale-accurate, consistent with lighting and materials',
-        'object_config' => [
-            'description' => 'the hat from image 1',
-            'role' => 'primary',
-            'position' => 'worn by the subject',
-            'context' => 'natural fit and lighting',
-            'priority' => 'high'
-        ]
+        'placement' => 'resting on a stable flat surface or object',
+        'priority' => 'low'
+    ]
     ]
 ];
 ?>
