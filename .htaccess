@@ -6,11 +6,12 @@ RewriteRule ^app/([a-zA-Z0-9]+)$ app.php?id=$1 [L,QSA]
 
 # Specific Dashboard Rule
 RewriteRule ^dashboard$ dashboard.php [L]
-RewriteRule ^create-app$ index-create-open.php [L]
+RewriteRule ^create-app$ generate.php [L]
+RewriteRule ^generate$ generate.php [L]
 RewriteRule ^create-generator$ create_generator.php [L]
 
-# Pretty URL for loading apps: /load/{app_id} -> index.php?app={app_id}
-RewriteRule ^load/([a-zA-Z0-9_]+)$ index.php?app=$1 [L,QSA]
+# Pretty URL for loading apps: /load/{app_id} -> generate.php?app=$1
+RewriteRule ^load/([a-zA-Z0-9_]+)$ generate.php?app=$1 [L,QSA]
 
 # Remove .php extension for any file
 RewriteCond %{REQUEST_FILENAME} !-d

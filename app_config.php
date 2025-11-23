@@ -54,6 +54,23 @@ $image_apps = [
         ],
         'allowed_sponsor_modes' => ['ambient_prop', 'panel_cameo'],
         'prompt_template' => "An artistic collage poster featuring [element1] and [element2]. Style inspired by [style]. Mixed media, creative composition."
+    ],
+    'brand_identity_kit' => [
+        'id'   => 'brand_identity_kit',
+        'name' => 'Brand Identity Kit',
+        'description' => 'Generate a complete brand showcase with 3 panels.',
+        'icon' => '💼',
+        'inputs' => [
+            ['slot' => 1, 'role' => 'logo', 'label' => 'Logo / Symbol', 'required' => true],
+            ['slot' => 2, 'role' => 'product', 'label' => 'Product', 'required' => true],
+            ['slot' => 3, 'role' => 'style', 'label' => 'Style / Vibe', 'required' => true],
+        ],
+        'layout' => [
+            'type'   => 'multi_panel',
+            'panels' => 3,
+        ],
+        'allowed_sponsor_modes' => ['ambient_prop'],
+        'prompt_template' => "A 3-panel brand identity showcase. Panel 1: A close-up of the [logo] embossed on high-quality paper. Panel 2: The [product] displayed in a professional studio setting. Panel 3: A lifestyle shot capturing the [style] vibe. Professional photography, cohesive branding."
     ]
 ];
 

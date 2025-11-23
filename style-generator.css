@@ -78,6 +78,25 @@
     box-shadow: 0 0 10px rgba(165, 243, 252, 0.1);
 }
 
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: rgba(165, 243, 252, 0.5);
+    box-shadow: 0 0 10px rgba(165, 243, 252, 0.1);
+}
+
 /* Panels Editor */
 .panels-editor,
 .inputs-editor {

@@ -49,69 +49,93 @@ if (strpos($contentType, 'application/json') !== false) {
     $remix_image_url = $_POST['remix_image_url'] ?? '';
 }
 
-// Handle Multiple Image Uploads
-$image_urls_input = [];
+// DEBUG LOGGING
+file_put_contents('../debug_upload.log', date('Y-m-d H:i:s') . " - POST: " . print_r($_POST, true) . "\nFILES: " . print_r($_FILES, true) . "\n", FILE_APPEND);
 
-error_log("Create API Input: " . json_encode($_POST));
-error_log("Create API Files: " . json_encode($_FILES));
+// Handle Multiple Image Uploads & Named Inputs
+$image_urls_input = []; // For legacy indexed inputs
+$named_input_values = []; // For new named inputs (role => value)
+$flux_images = []; // Final list for Flux
 
-if (!empty($_FILES['images']['name'][0])) {
-    $target_dir = "../uploads/";
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0755, true);
-    }
-    
-    $file_count = count($_FILES['images']['name']);
-    
-    for ($i = 0; $i < $file_count; $i++) {
-        if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
-            $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
-            $uuid = generateUUID();
-            $new_filename = $uuid . '.' . $file_extension;
-            $target_file = $target_dir . $new_filename;
-            
-            if (move_uploaded_file($_FILES["images"]["tmp_name"][$i], $target_file)) {
-                $s3_url = uploadToS3($target_file, "uploads/" . $new_filename, $_FILES["images"]["type"][$i]);
-                if ($s3_url) {
-                    $image_urls_input[] = $s3_url;
-                    unlink($target_file); // Remove local file after upload
-                } else {
-                    error_log("Failed to upload input image #$i to S3: " . $_FILES["images"]["name"][$i]);
-                    echo json_encode(['success' => false, 'error' => 'Failed to upload image to S3']);
-                    exit;
-                }
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Failed to upload image']);
-                exit;
+// Sponsor is always Image 1
+$sponsor_data = $sponsors[$sponsor_key] ?? $sponsors['la_croix'];
+$sponsor_image = $sponsor_data['image_ref'] ?? $sponsor_data['image'];
+$flux_images[] = $sponsor_image;
+$current_image_index = 2; // Start at 2
+
+// Helper to process a file upload
+function processUpload($file, $target_dir) {
+    if ($file['error'] === UPLOAD_ERR_OK) {
+        $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $uuid = generateUUID();
+        $new_filename = $uuid . '.' . $file_extension;
+        $target_file = $target_dir . $new_filename;
+        
+        if (move_uploaded_file($file['tmp_name'], $target_file)) {
+            $s3_url = uploadToS3($target_file, "uploads/" . $new_filename, $file['type']);
+            if ($s3_url) {
+                unlink($target_file);
+                return $s3_url;
             }
+        }
+    }
+    return null;
+}
+
+$target_dir = "../uploads/";
+if (!file_exists($target_dir)) {
+    mkdir($target_dir, 0755, true);
+}
+
+// 1. Handle Legacy Indexed Images (images[])
+if (!empty($_FILES['images']['name'][0])) {
+    $file_count = count($_FILES['images']['name']);
+    for ($i = 0; $i < $file_count; $i++) {
+        $file = [
+            'name' => $_FILES['images']['name'][$i],
+            'type' => $_FILES['images']['type'][$i],
+            'tmp_name' => $_FILES['images']['tmp_name'][$i],
+            'error' => $_FILES['images']['error'][$i],
+            'size' => $_FILES['images']['size'][$i]
+        ];
+        $url = processUpload($file, $target_dir);
+        if ($url) {
+            $image_urls_input[] = $url;
+            $flux_images[] = $url; // Add to flux list
+            $current_image_index++;
         }
     }
 } elseif (!empty($remix_image_url)) {
     $image_urls_input[] = $remix_image_url;
+    $flux_images[] = $remix_image_url;
+    $current_image_index++;
+}
+
+// 2. Handle Named Inputs (from generate.php)
+// We need to check $_FILES for named keys that are NOT 'images'
+foreach ($_FILES as $key => $file) {
+    if ($key !== 'images') {
+        $url = processUpload($file, $target_dir);
+        if ($url) {
+            $named_input_values[$key] = $url;
+            // We don't add to flux_images yet, we do it based on app config order
+        }
+    }
+}
+
+// Handle Named Text Inputs
+foreach ($_POST as $key => $value) {
+    if (!in_array($key, ['prompt', 'sponsor', 'app_id', 'remix_image_url'])) {
+        $named_input_values[$key] = $value;
+    }
 }
 
 // --- LOGIC START ---
 
-// 1. Resolve Sponsor
-$sponsor_data = $sponsors[$sponsor_key] ?? $sponsors['la_croix'];
-$sponsor_image = $sponsor_data['image_ref'] ?? $sponsor_data['image']; // Use reference image if available
 $sponsor_name = $sponsor_data['name'];
-
-// 2. Resolve App & Construct Prompt
 $final_prompt_text = "";
-$sponsor_mode = 'ambient_prop'; // Default
+$sponsor_mode = 'ambient_prop';
 $sponsor_prompt_text = "";
-
-// Prepare image list for FLUX (Sponsor is always Image 1)
-$flux_images = [$sponsor_image];
-foreach ($image_urls_input as $url) {
-    $flux_images[] = $url;
-}
-// Now:
-// Image 1 = Sponsor
-// Image 2 = User Upload 1
-// Image 3 = User Upload 2
-// ...
 
 if ($app_id && isset($image_apps[$app_id])) {
     // --- APP MODE ---
@@ -121,54 +145,90 @@ if ($app_id && isset($image_apps[$app_id])) {
     $allowed_modes = $app['allowed_sponsor_modes'] ?? ['ambient_prop', 'panel_cameo'];
     $sponsor_modes = $sponsor_data['modes'];
     $valid_modes = array_intersect($allowed_modes, $sponsor_modes);
-    
-    if (!empty($valid_modes)) {
-        // Pick a random valid mode or the first one
-        $sponsor_mode = array_values($valid_modes)[0]; 
-    } else {
-        $sponsor_mode = 'ambient_prop'; // Fallback
-    }
+    $sponsor_mode = !empty($valid_modes) ? array_values($valid_modes)[0] : 'ambient_prop';
     
     // Get Sponsor Prompt
     $raw_sponsor_prompt = $sponsor_data['mode_prompts'][$sponsor_mode] ?? "";
-    // Replace 'image S' with 'image 1'
     $sponsor_prompt_text = str_replace('image S', 'image 1', $raw_sponsor_prompt);
     
     // Build Main Prompt
-    $template = $app['prompt_template'] ?? ($app['prompts'][0] ?? "");
+    // If app has 'prompts' array (multi-panel), join them.
+    // If 'prompt_template' string, use that.
+    $template = "";
+    if (isset($app['prompts']) && is_array($app['prompts'])) {
+        $template = implode(" ", $app['prompts']);
+    } else {
+        $template = $app['prompt_template'] ?? ($app['prompts'][0] ?? "");
+    }
     
-    // Replace placeholders with Image References
-    // Slot 1 -> User Image 1 -> Image 2
-    // Slot N -> User Image N -> Image (N+1)
-    foreach ($app['inputs'] as $input) {
-        $slot = $input['slot'];
-        $role = $input['role'];
-        $flux_image_index = $slot + 1; // +1 because Sponsor is Image 1
-        
-        // Simple replacement: [role] -> "the role from image X"
-        // Or if the template uses [role], we replace it.
-        $replacement = "the {$input['label']} from image $flux_image_index";
-        
-        // Check if we actually have this image
-        if (isset($image_urls_input[$slot - 1])) {
-             $template = str_replace("[{$role}]", $replacement, $template);
-        } else {
-             // If optional image missing, maybe remove the part? 
-             // For now, just replace with "a generic {$role}"
-             $template = str_replace("[{$role}]", "a {$role}", $template);
+    // Map Inputs to Flux Images and Prompt
+    $role_to_image_index = [];
+    
+    // If we have legacy images[], map them to slots 1, 2, 3...
+    if (!empty($image_urls_input)) {
+        foreach ($app['inputs'] as $input) {
+            $slot = $input['slot']; // 1-based
+            if (isset($image_urls_input[$slot - 1])) {
+                $role_to_image_index[$input['role']] = $slot + 1; // +1 for sponsor
+            }
         }
     }
     
-    // CLEANUP: Remove any remaining placeholders (e.g. text inputs we couldn't fill)
-    // This prevents "featuring [Name]" artifacts.
-    $template = preg_replace('/\[.*?\]/', '', $template);
-    
-    // Append User's "Vibe" / Extra Details
-    if (!empty($prompt)) {
-        $template .= " " . $prompt;
+    // Process App Inputs (Named)
+    foreach ($app['inputs'] as $input) {
+        $role = $input['role'];
+        $label = $input['label'];
+        $type = $input['type'] ?? 'image'; 
+        
+        // PHP converts spaces and dots to underscores in POST/FILES keys
+        $lookup_key = str_replace([' ', '.'], '_', $role);
+
+        // Check if we have a named value for this role (using normalized key)
+        if (isset($named_input_values[$lookup_key])) {
+            $val = $named_input_values[$lookup_key];
+            
+            if ($type === 'image' || isset($_FILES[$lookup_key])) { 
+                 // Add to Flux Images list
+                 $flux_images[] = $val;
+                 $role_to_image_index[$role] = count($flux_images); 
+            } else {
+                // Text input
+            }
+        }
     }
     
-    $final_prompt_text = $template;
+    // Replace placeholders in template
+    foreach ($app['inputs'] as $input) {
+        $role = $input['role'];
+        $label = $input['label'];
+        $type = $input['type'] ?? 'image';
+        
+        $lookup_key = str_replace([' ', '.'], '_', $role);
+        
+        if (isset($role_to_image_index[$role])) {
+            // It's an image
+            $idx = $role_to_image_index[$role];
+            $replacement = "the {$label} from image $idx";
+            $template = str_replace("[{$role}]", $replacement, $template);
+        } elseif (isset($named_input_values[$lookup_key]) && $type !== 'image') {
+            // It's a text value
+            $template = str_replace("[{$role}]", $named_input_values[$lookup_key], $template);
+        } else {
+            // Missing input
+            $template = str_replace("[{$role}]", "a {$label}", $template);
+        }
+    }
+    
+    // CLEANUP
+    $template = preg_replace('/\[.*?\]/', '', $template);
+    
+    // Append User's "Vibe" / Extra Details (global prompt)
+    $extra_prompt = $named_input_values['extra_prompt'] ?? $prompt;
+    if (!empty($extra_prompt)) {
+        $template .= " " . $extra_prompt;
+    }
+    
+    $final_prompt_text = trim($template);
     
 } else {
     // --- LEGACY / FREEFORM MODE ---

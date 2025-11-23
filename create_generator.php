@@ -219,6 +219,35 @@
         <p>&copy; 2025 ViralMagical. Forge Mode.</p>
     </footer>
 
-    <script src="/script-generator.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic-to@1.3.0/dist/iife/heic-to.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <script src="script-generator.js"></script>
+    <script>
+        // Helper for HEIC/Compression in Generator Preview
+        async function processFile(file) {
+            try {
+                let finalFile = file;
+                // HEIC Conversion
+                if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+                    if (window.HeicTo) {
+                        const blob = await window.HeicTo({ blob: file, type: 'image/jpeg' });
+                        finalFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+                    }
+                }
+                // Compression
+                if (window.imageCompression) {
+                    const options = { maxSizeMB: 1, maxWidthOrHeight: 2048, useWebWorker: true };
+                    finalFile = await window.imageCompression(finalFile, options);
+                }
+                return finalFile;
+            } catch (e) {
+                console.error("Processing failed", e);
+                return file;
+            }
+        }
+        
+        // Expose to script-generator.js
+        window.processFile = processFile;
+    </script>
 </body>
 </html>

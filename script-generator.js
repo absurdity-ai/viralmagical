@@ -360,8 +360,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Step 4: Preview ---
+    const previewFiles = {}; // Store processed files
+
     function renderPreview() {
         previewInputsContainer.innerHTML = '';
+        // Clear previous files
+        for (const key in previewFiles) delete previewFiles[key];
 
         if (state.inputs.length === 0) {
             previewInputsContainer.innerHTML = '<p>No inputs defined.</p>';
@@ -371,14 +375,75 @@ document.addEventListener('DOMContentLoaded', () => {
         state.inputs.forEach(input => {
             const div = document.createElement('div');
             div.className = 'form-group';
-            div.innerHTML = `
-                <label>${input.label} (${input.role})</label>
-                ${input.type === 'image'
-                    ? `<input type="file" class="preview-input" data-role="${input.role}" accept="image/*">`
-                    : `<input type="text" class="preview-input" data-role="${input.role}" placeholder="Enter test value">`
-                }
-            `;
+
+            if (input.type === 'image') {
+                div.innerHTML = `
+                    <label>${input.label} (${input.role})</label>
+                    <div class="image-upload-section">
+                        <label class="upload-label">
+                            <span class="icon">📷</span> Upload Image
+                            <input type="file" class="preview-input" data-role="${input.role}" accept="image/png,image/jpeg,image/jpg,image/webp,.heic,.heif" hidden>
+                        </label>
+                        <div id="preview-${input.role}" class="image-preview-grid hidden"></div>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <label>${input.label} (${input.role})</label>
+                    <textarea class="preview-input" data-role="${input.role}" placeholder="Enter test value"></textarea>
+                `;
+            }
             previewInputsContainer.appendChild(div);
+        });
+
+        // Add listeners for file inputs
+        previewInputsContainer.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const role = input.dataset.role;
+                const previewContainer = document.getElementById(`preview-${role}`);
+
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+
+                    // Use helper if available
+                    let finalFile = file;
+                    if (window.processFile) {
+                        finalFile = await window.processFile(file);
+                    }
+
+                    previewFiles[role] = finalFile;
+
+                    // Show Preview
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        previewContainer.innerHTML = '';
+                        previewContainer.classList.remove('hidden');
+
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'thumbnail-wrapper';
+
+                        const img = document.createElement('img');
+                        img.src = ev.target.result;
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'thumbnail-remove';
+                        removeBtn.innerHTML = '×';
+                        removeBtn.onclick = (evt) => {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            delete previewFiles[role];
+                            input.value = '';
+                            previewContainer.innerHTML = '';
+                            previewContainer.classList.add('hidden');
+                        };
+
+                        wrapper.appendChild(img);
+                        wrapper.appendChild(removeBtn);
+                        previewContainer.appendChild(wrapper);
+                    };
+                    reader.readAsDataURL(finalFile);
+                }
+            });
         });
     }
 
@@ -392,7 +457,9 @@ document.addEventListener('DOMContentLoaded', () => {
             inputs.forEach(input => {
                 const role = input.dataset.role;
                 if (input.type === 'file') {
-                    if (input.files.length > 0) {
+                    if (previewFiles[role]) {
+                        formData.append(role, previewFiles[role]);
+                    } else if (input.files.length > 0) {
                         formData.append(role, input.files[0]);
                     } else {
                         // If required, maybe warn? For preview, let's be lenient or strict?
@@ -429,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
             previewStrip.innerHTML = '';
 
             try {
-                const response = await fetch('api/preview_generator.php', {
+                const response = await fetch('/api/preview_generator.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -506,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
         publishBtn.querySelector('.btn-text').textContent = 'PUBLISHING...';
 
         try {
-            const response = await fetch('api/save_app.php', {
+            const response = await fetch('/api/save_app.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

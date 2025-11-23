@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadGallery() {
         try {
-            const response = await fetch('/api/get_apps.php?user_id=' + userId);
+            const response = await fetch('/api/get_apps.php?user_id=' + userId + '&t=' + Date.now());
             const data = await response.json();
 
             // Only show skeletons if gallery is empty (initial load)

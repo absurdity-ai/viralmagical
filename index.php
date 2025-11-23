@@ -119,74 +119,10 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
     </header>
 
     <main>
-        <?php if ($current_app): ?>
-            <!-- APP CREATION MODE -->
-            <section class="hero">
-                <a href="/" class="back-link">← Back to Apps</a>
-                <h1><?php echo htmlspecialchars($current_app['name']); ?></h1>
-                <p class="subtitle"><?php echo htmlspecialchars($current_app['description']); ?></p>
-                
-                <div class="creator-interface glass-panel">
-                    <input type="hidden" id="appId" value="<?php echo htmlspecialchars($current_app['id']); ?>">
-                    
-                    <div class="input-row">
-                        <div class="input-group" style="flex: 1;">
-                            <div class="slot-guide">
-                                <p style="margin-bottom:0.5rem; font-weight:600;">How to use:</p>
-                                <?php foreach ($current_app['inputs'] as $input): ?>
-                                    <div class="slot-item">
-                                        <span class="slot-num"><?php echo $input['slot']; ?></span>
-                                        <span><?php echo htmlspecialchars($input['label']); ?> <?php echo $input['required'] ? '*' : '(optional)'; ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                            <!-- Optional Vibe/Details Input -->
-                            <div style="position: relative;">
-                                <textarea id="promptInput" placeholder="Optional: Add extra details, vibe, or style instructions..." style="height: 80px; width: 100%;"></textarea>
-                                <button id="autoFillBtn" type="button" class="btn-secondary" style="position: absolute; right: 5px; bottom: 5px; padding: 4px 8px; font-size: 0.8rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);">✨ Auto-Fill Details</button>
-                            </div>
-                        </div>
-
-                        <div class="image-upload-section" style="flex: 1;">
-                            <label class="upload-label">
-                                <span class="icon">📷</span> Upload Images (Select in order)
-                                <input type="file" id="imageInput" accept="image/png,image/jpeg,image/jpg,image/webp,.heic,.heif" multiple hidden>
-                            </label>
-                            <div id="imagePreview" class="image-preview-grid hidden"></div>
-                            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 0.5rem; text-align: center;">
-                                Please upload images in the order listed on the left.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="sponsor-selection">
-                        <label>Powered by Sponsor (Free):</label>
-                        <div class="sponsor-options">
-                            <?php foreach ($sponsors as $key => $sponsor): ?>
-                                <div class="sponsor-card <?php echo $key === 'la_croix' ? 'selected' : ''; ?>" data-sponsor="<?php echo $key; ?>">
-                                    <div class="sponsor-icon">
-                                        <img src="<?php echo $sponsor['image']; ?>" alt="<?php echo $sponsor['name']; ?>">
-                                    </div>
-                                    <span><?php echo $sponsor['name']; ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-
-                    <button id="createBtn" class="cta-button">
-                        <span class="btn-text">CREATE MAGIC</span>
-                        <div class="loader hidden"></div>
-                    </button>
-                </div>
-            </section>
-
-        <?php else: ?>
             <!-- GALLERY MODE -->
             <section class="hero" style="min-height: auto; padding-bottom: 2rem;">
-                <h1>Viral Image Apps<br><span class="highlight">Create with one click.</span><span class="highlight">
-You choose the sponsor.</span><span class="highlight">
-Free forever.</span></h1>
-                <p class="subtitle">Pick an app. No prompting. You own everything you create.</p>
+                <h1>Upload One Image. Generate a Media Universe.<br><span class="highlight">AI content derived from your upload, in a unified visual grammar.</span></h1>
+                <p class="subtitle">Product Sponsored universes subsidize creation. You own every output.</p>
                 
                 <div class="app-grid">
                     <?php foreach ($image_apps as $app): ?>
@@ -205,7 +141,6 @@ Free forever.</span></h1>
                     </a>
                 </div>
             </section>
-        <?php endif; ?>
 
         <?php include 'includes/gallery_section.php'; ?>
     </main>
