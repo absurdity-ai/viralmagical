@@ -6,6 +6,7 @@ RewriteRule ^app/([a-zA-Z0-9]+)$ app.php?id=$1 [L,QSA]
 
 # Specific Dashboard Rule
 RewriteRule ^dashboard$ dashboard.php [L]
+RewriteRule ^create-app$ index-create-open.php [L]
 
 # Remove .php extension for any file
 RewriteCond %{REQUEST_FILENAME} !-d

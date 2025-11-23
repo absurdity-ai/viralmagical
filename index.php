@@ -1,14 +1,105 @@
+<?php
+require_once 'app_config.php';
+require_once 'sponsor_config.php';
+
+$app_id = $_GET['app'] ?? null;
+$current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ViralMagical - Create for free, forever.</title>
-    <meta name="description" content="ViralMagical is a 100% free, truly democratic AI creativity platform funded entirely through product placement. Create consistent characters and apps with natural language.">
+    <title>ViralMagical - <?php echo $current_app ? $current_app['name'] : 'AI Image Playground'; ?></title>
+    <meta name="description" content="ViralMagical is a 100% free, truly democratic AI creativity platform.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+        .app-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.2s, background 0.2s;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .app-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .app-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .app-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .app-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+        .app-btn {
+            margin-top: auto;
+            background: linear-gradient(45deg, #ff0055, #0055ff);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            width: 100%;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+        }
+        .back-link:hover {
+            color: white;
+        }
+        .slot-guide {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .slot-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .slot-num {
+            background: rgba(255,255,255,0.2);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="background-blobs">
@@ -22,68 +113,98 @@
             <span class="vm-logo">VM</span> ViralMagical
         </div>
         <nav>
-            <a href="#" class="nav-link">Gallery</a>
-            <a href="#" class="nav-link">About</a>
+            <a href="index.php" class="nav-link">Apps</a>
+            <a href="index-create-open.php" class="nav-link">Advanced</a>
         </nav>
     </header>
 
     <main>
-        <section class="hero">
-            <h1>Create for free, forever.<br><span class="highlight">Powered by product sponsorship.</span></h1>
-            <p class="subtitle">Democratic AI creativity. Cross-image consistency. Natural language apps.</p>
-            
-            <div class="creator-interface glass-panel">
-                <div class="input-row">
-                    <div class="input-group">
-                        <textarea id="promptInput" placeholder="Describe your idea... e.g., 'A cyberpunk detective drinking coffee in a neon city'"></textarea>
-                    </div>
-
-                    <div class="image-upload-section">
-                        <label class="upload-label">
-                            <span class="icon">📷</span> Upload Reference Image (up to 8)
-                            <input type="file" id="imageInput" accept="image/png,image/jpeg,image/jpg,image/webp,.heic,.heif" multiple hidden>
-                        </label>
-                        <div id="imagePreview" class="image-preview-grid hidden">
-                            <!-- Thumbnails will be added here dynamically -->
-                        </div>
-                    </div>
-                </div>
+        <?php if ($current_app): ?>
+            <!-- APP CREATION MODE -->
+            <section class="hero">
+                <a href="index.php" class="back-link">← Back to Apps</a>
+                <h1><?php echo htmlspecialchars($current_app['name']); ?></h1>
+                <p class="subtitle"><?php echo htmlspecialchars($current_app['description']); ?></p>
                 
-                <div class="sponsor-selection">
-                    <label>Choose your product sponsor to fund this creation:</label>
-                    <div class="sponsor-options">
-                        <div class="sponsor-card selected" data-sponsor="can">
-                            <div class="sponsor-icon">
-                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/la-croix.png" alt="La Croix">
+                <div class="creator-interface glass-panel">
+                    <input type="hidden" id="appId" value="<?php echo htmlspecialchars($current_app['id']); ?>">
+                    
+                    <div class="input-row">
+                        <div class="input-group" style="flex: 1;">
+                            <div class="slot-guide">
+                                <p style="margin-bottom:0.5rem; font-weight:600;">How to use:</p>
+                                <?php foreach ($current_app['inputs'] as $input): ?>
+                                    <div class="slot-item">
+                                        <span class="slot-num"><?php echo $input['slot']; ?></span>
+                                        <span><?php echo htmlspecialchars($input['label']); ?> <?php echo $input['required'] ? '*' : '(optional)'; ?></span>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                            <span>La Croix</span>
+                            <!-- Optional Vibe/Details Input -->
+                            <textarea id="promptInput" placeholder="Optional: Add extra details, vibe, or style instructions..." style="height: 80px;"></textarea>
                         </div>
-                        <div class="sponsor-card" data-sponsor="keycap">
-                            <div class="sponsor-icon">
-                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/claude-key.png" alt="Keycap">
-                            </div>
-                            <span>Keycap</span>
-                        </div>
-                        <div class="sponsor-card" data-sponsor="hat">
-                            <div class="sponsor-icon">
-                                <img src="https://viralmagical.s3.us-east-1.amazonaws.com/icons/bfl-fal-hat.png" alt="Hat">
-                            </div>
-                            <span>Hat</span>
+
+                        <div class="image-upload-section" style="flex: 1;">
+                            <label class="upload-label">
+                                <span class="icon">📷</span> Upload Images (Select in order)
+                                <input type="file" id="imageInput" accept="image/png,image/jpeg,image/jpg,image/webp,.heic,.heif" multiple hidden>
+                            </label>
+                            <div id="imagePreview" class="image-preview-grid hidden"></div>
+                            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 0.5rem; text-align: center;">
+                                Please upload images in the order listed on the left.
+                            </p>
                         </div>
                     </div>
+                    
+                    <div class="sponsor-selection">
+                        <label>Powered by Sponsor (Free):</label>
+                        <div class="sponsor-options">
+                            <?php foreach ($sponsors as $key => $sponsor): ?>
+                                <div class="sponsor-card <?php echo $key === 'la_croix' ? 'selected' : ''; ?>" data-sponsor="<?php echo $key; ?>">
+                                    <div class="sponsor-icon">
+                                        <img src="<?php echo $sponsor['image']; ?>" alt="<?php echo $sponsor['name']; ?>">
+                                    </div>
+                                    <span><?php echo $sponsor['name']; ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <button id="createBtn" class="cta-button">
+                        <span class="btn-text">CREATE MAGIC</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                </div>
+            </section>
+
+        <?php else: ?>
+            <!-- GALLERY MODE -->
+            <section class="hero" style="min-height: auto; padding-bottom: 2rem;">
+                <h1>Magic Apps<br><span class="highlight">Create with one click.</span></h1>
+                <p class="subtitle">Choose an app to start creating. No prompting required.</p>
+                
+                <div class="app-grid">
+                    <?php foreach ($image_apps as $app): ?>
+                        <a href="?app=<?php echo $app['id']; ?>" class="app-card">
+                            <div class="app-icon"><?php echo $app['icon']; ?></div>
+                            <div class="app-name"><?php echo htmlspecialchars($app['name']); ?></div>
+                            <div class="app-desc"><?php echo htmlspecialchars($app['description']); ?></div>
+                            <button class="app-btn">Create</button>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
 
-                <button id="createBtn" class="cta-button">
-                    <span class="btn-text">CREATE MAGIC</span>
-                    <div class="loader hidden"></div>
-                </button>
-            </div>
-        </section>
+                <div style="margin-top: 3rem; text-align: center;">
+                    <a href="index-create-open.php" style="color: rgba(255,255,255,0.5); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 2px;">
+                        ✨ Advanced: build your own app / custom JSON
+                    </a>
+                </div>
+            </section>
+        <?php endif; ?>
 
         <section class="gallery-section">
             <h2>Recent Creations</h2>
             <div id="galleryGrid" class="gallery-grid">
-                <!-- Gallery items will be loaded here -->
                 <div class="gallery-item glass-panel skeleton"></div>
                 <div class="gallery-item glass-panel skeleton"></div>
                 <div class="gallery-item glass-panel skeleton"></div>
@@ -91,7 +212,7 @@
         </section>
     </main>
 
-    <!-- Creation Progress Modal -->
+    <!-- Creation Progress Modal (Same as before) -->
     <div id="creationModal" class="modal hidden">
         <div class="modal-content glass-panel">
             <div class="modal-header">

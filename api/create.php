@@ -20,6 +20,8 @@ register_shutdown_function(function() {
 require_once '../db_connect.php';
 require_once '../config.php';
 require_once 's3_upload.php';
+require_once '../app_config.php';
+require_once '../sponsor_config.php';
 
 // Generate UUID v4
 function generateUUID() {
@@ -37,17 +39,14 @@ $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
 if (strpos($contentType, 'application/json') !== false) {
     $input = json_decode(file_get_contents('php://input'), true);
     $prompt = $input['prompt'] ?? '';
-    $sponsor = $input['sponsor'] ?? 'cola';
+    $sponsor_key = $input['sponsor'] ?? 'la_croix';
+    $app_id = $input['app_id'] ?? null;
     $remix_image_url = $input['remix_image_url'] ?? '';
 } else {
     $prompt = $_POST['prompt'] ?? '';
-    $sponsor = $_POST['sponsor'] ?? 'cola';
+    $sponsor_key = $_POST['sponsor'] ?? 'la_croix';
+    $app_id = $_POST['app_id'] ?? null;
     $remix_image_url = $_POST['remix_image_url'] ?? '';
-}
-
-if (empty($prompt) && empty($_FILES['images']) && empty($remix_image_url)) {
-    echo json_encode(['success' => false, 'error' => 'Prompt or Image is required']);
-    exit;
 }
 
 // Handle Multiple Image Uploads
@@ -75,11 +74,11 @@ if (!empty($_FILES['images']['name'][0])) {
                     unlink($target_file); // Remove local file after upload
                 } else {
                     error_log("Failed to upload input image #$i to S3: " . $_FILES["images"]["name"][$i]);
-                    echo json_encode(['success' => false, 'error' => 'Failed to upload image to S3: ' . $_FILES["images"]["name"][$i]]);
+                    echo json_encode(['success' => false, 'error' => 'Failed to upload image to S3']);
                     exit;
                 }
             } else {
-                echo json_encode(['success' => false, 'error' => 'Failed to upload image: ' . $_FILES["images"]["name"][$i]]);
+                echo json_encode(['success' => false, 'error' => 'Failed to upload image']);
                 exit;
             }
         }
@@ -88,89 +87,138 @@ if (!empty($_FILES['images']['name'][0])) {
     $image_urls_input[] = $remix_image_url;
 }
 
+// --- LOGIC START ---
 
-// Sponsor prompt injection
-// Sponsor prompt injection
-// Sponsor prompt injection
-require_once '../sponsor_config.php';
+// 1. Resolve Sponsor
+$sponsor_data = $sponsors[$sponsor_key] ?? $sponsors['la_croix'];
+$sponsor_image = $sponsor_data['image_ref'] ?? $sponsor_data['image']; // Use reference image if available
+$sponsor_name = $sponsor_data['name'];
 
-$sponsor_data = $sponsor_prompts[$sponsor] ?? $sponsor_prompts['can'];
-$sponsor_text = $sponsor_data['text'];
-$sponsor_image = $sponsor_data['image'];
+// 2. Resolve App & Construct Prompt
+$final_prompt_text = "";
+$sponsor_mode = 'ambient_prop'; // Default
+$sponsor_prompt_text = "";
 
-// Flux-optimized prompt structure (JSON)
+// Prepare image list for FLUX (Sponsor is always Image 1)
+$flux_images = [$sponsor_image];
+foreach ($image_urls_input as $url) {
+    $flux_images[] = $url;
+}
+// Now:
+// Image 1 = Sponsor
+// Image 2 = User Upload 1
+// Image 3 = User Upload 2
+// ...
+
+if ($app_id && isset($image_apps[$app_id])) {
+    // --- APP MODE ---
+    $app = $image_apps[$app_id];
+    
+    // Determine Sponsor Mode
+    $allowed_modes = $app['allowed_sponsor_modes'];
+    $sponsor_modes = $sponsor_data['modes'];
+    $valid_modes = array_intersect($allowed_modes, $sponsor_modes);
+    
+    if (!empty($valid_modes)) {
+        // Pick a random valid mode or the first one
+        $sponsor_mode = array_values($valid_modes)[0]; 
+    } else {
+        $sponsor_mode = 'ambient_prop'; // Fallback
+    }
+    
+    // Get Sponsor Prompt
+    $raw_sponsor_prompt = $sponsor_data['mode_prompts'][$sponsor_mode] ?? "";
+    // Replace 'image S' with 'image 1'
+    $sponsor_prompt_text = str_replace('image S', 'image 1', $raw_sponsor_prompt);
+    
+    // Build Main Prompt
+    $template = $app['prompt_template'];
+    
+    // Replace placeholders with Image References
+    // Slot 1 -> User Image 1 -> Image 2
+    // Slot N -> User Image N -> Image (N+1)
+    foreach ($app['inputs'] as $input) {
+        $slot = $input['slot'];
+        $role = $input['role'];
+        $flux_image_index = $slot + 1; // +1 because Sponsor is Image 1
+        
+        // Simple replacement: [role] -> "the role from image X"
+        // Or if the template uses [role], we replace it.
+        $replacement = "the {$input['label']} from image $flux_image_index";
+        
+        // Check if we actually have this image
+        if (isset($image_urls_input[$slot - 1])) {
+             $template = str_replace("[{$role}]", $replacement, $template);
+        } else {
+             // If optional image missing, maybe remove the part? 
+             // For now, just replace with "a generic {$role}"
+             $template = str_replace("[{$role}]", "a {$role}", $template);
+        }
+    }
+    
+    // Append User's "Vibe" / Extra Details
+    if (!empty($prompt)) {
+        $template .= " " . $prompt;
+    }
+    
+    $final_prompt_text = $template;
+    
+} else {
+    // --- LEGACY / FREEFORM MODE ---
+    $final_prompt_text = $prompt;
+    
+    // Default Sponsor Logic
+    $sponsor_mode = 'ambient_prop';
+    $raw_sponsor_prompt = $sponsor_data['mode_prompts'][$sponsor_mode] ?? "";
+    $sponsor_prompt_text = str_replace('image S', 'image 1', $raw_sponsor_prompt);
+    
+    if (empty($final_prompt_text) && empty($image_urls_input)) {
+         echo json_encode(['success' => false, 'error' => 'Prompt or Image is required']);
+         exit;
+    }
+}
+
+// 3. Build FLUX JSON
+// We use a simplified structure or the one FLUX expects.
+// The previous code used a complex JSON structure for "prompt".
+// Let's stick to that structure but inject our new text.
+
 $prompt_structure = [
-    "scene" => $prompt,
-    "subjects" => [
-        [
-            "description" => "The primary subject or character of the scene, captured naturally",
-            "role" => "primary",
-            "pose" => "whatever fits the moment organically",
-            "placement" => "central or context-relevant"
-        ]
-    ],
+    "scene" => $final_prompt_text,
     "objects" => [
         [
-            "description" => $sponsor_text,
-            "source_image" => "image 1",
-            "role" => $sponsor_data['role'] ?? "secondary product",
-            "placement" => $sponsor_data['placement'] ?? "context-aware, scale-accurate, consistent with lighting and materials"
+            "description" => $sponsor_prompt_text,
+            "source_image" => "image 1", // Sponsor is always image 1
+            "role" => "product placement",
+            "placement" => "context-aware"
         ]
     ],
+    // Add other fields if needed, or keep it simple
     "style" => "photorealistic cinematic",
-    "lighting" => "natural and believable, matching the scene",
-    "composition" => "harmonious, coherent, non-dominant product integration",
-    "camera" => [
-        "lens-mm" => 50,
-        "depth-of-field" => "shallow",
-        "focus" => "sharp on subject"
-    ],
     "resolution" => "high"
 ];
 
-$full_prompt = json_encode($prompt_structure);
+$full_prompt_json = json_encode($prompt_structure);
 
 // Call FAL.AI API
 $fal_key = getenv('FAL_KEY');
+$api_url = "https://queue.fal.run/fal-ai/alpha-image-232/edit-image"; // Always use edit mode as we have sponsor image
 
-// Determine Model and Data
-if (!empty($image_urls_input) || !empty($sponsor_image)) {
-    // Image Edit Mode (Flux Edit)
-    $api_url = "https://queue.fal.run/fal-ai/alpha-image-232/edit-image";
-    
-    // Prepend sponsor image as the first image (image1)
-    array_unshift($image_urls_input, $sponsor_image);
-    
-    $data = [
-        "prompt" => $full_prompt,
-        "image_urls" => $image_urls_input,
-        "image_size" => "landscape_4_3",
-        "num_inference_steps" => 28,
-        "guidance_scale" => 3.5,
-        "strength" => 0.85 
-    ];
-} else {
-    // Text-to-Image Mode (Flux Dev/Pro)
-    // Note: If we always want sponsor product placement, we should probably ALWAYS use edit mode 
-    // with the sponsor image, even if user didn't upload their own.
-    // But for now, let's keep the fallback if something goes wrong with images.
-    
-    $api_url = "https://queue.fal.run/fal-ai/beta-image-232";
-    $data = [
-        "prompt" => $full_prompt,
-        "image_size" => "landscape_4_3",
-        "num_inference_steps" => 28,
-        "guidance_scale" => 3.5
-    ];
-}
-
+$data = [
+    "prompt" => $full_prompt_json,
+    "image_urls" => $flux_images,
+    "image_size" => "landscape_4_3",
+    "num_inference_steps" => 28,
+    "guidance_scale" => 3.5,
+    "strength" => 0.85 
+];
 
 $headers = [
     "Authorization: Key $fal_key",
     "Content-Type: application/json"
 ];
 
-// 1. Submit to Queue
+// Submit to Queue
 $ch = curl_init($api_url);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -193,27 +241,14 @@ if (!$request_id) {
     exit;
 }
 
-// 2. Poll for result
+// Poll for result
 $attempts = 0;
-$max_attempts = 120; // Increased to 120s to prevent timeouts
+$max_attempts = 120;
 $image_url = '';
 
 while ($attempts < $max_attempts) {
     sleep(1);
-    // Note: Status URL format might differ for alpha model? Usually standard queue format.
-    // Assuming standard queue URL structure works for both.
-    $status_url_check = "https://queue.fal.run/fal-ai/beta-image-232/requests/$request_id/status";
-    // Wait, if using alpha model, check if status URL base is different.
-    // Usually queue.fal.run/REQUEST_ID/status works regardless of model path if using request_id.
-    // But let's be safe and use the status_url from response if available, or construct based on model.
-    
-    if (isset($queue_result['status_url'])) {
-        $status_url_check = $queue_result['status_url'];
-    } else {
-        // Fallback construction
-        $model_path = !empty($image_url_input) ? "fal-ai/alpha-image-232/edit-image" : "fal-ai/beta-image-232";
-        $status_url_check = "https://queue.fal.run/$model_path/requests/$request_id/status";
-    }
+    $status_url_check = $queue_result['status_url'] ?? "https://queue.fal.run/fal-ai/alpha-image-232/edit-image/requests/$request_id/status";
 
     $ch = curl_init($status_url_check);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -228,14 +263,13 @@ while ($attempts < $max_attempts) {
         if (isset($status_data['images'])) {
             $image_url = $status_data['images'][0]['url'];
         } elseif (isset($status_data['response_url'])) {
-            // Fetch result from response_url
-            $ch2 = curl_init($status_data['response_url']);
-            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-            $final_response = curl_exec($ch2);
-            curl_close($ch2);
-            $final_data = json_decode($final_response, true);
-            $image_url = $final_data['images'][0]['url'] ?? '';
+             $ch2 = curl_init($status_data['response_url']);
+             curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+             curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+             $final_response = curl_exec($ch2);
+             curl_close($ch2);
+             $final_data = json_decode($final_response, true);
+             $image_url = $final_data['images'][0]['url'] ?? '';
         }
         break;
     } else if ($status === 'FAILED') {
@@ -272,7 +306,6 @@ function generateShortCode($length = 6) {
     return $randomString;
 }
 
-
 $short_code = generateShortCode();
 $user_id = $_COOKIE['vm_user_id'] ?? 'anonymous';
 $app_uuid = generateUUID();
@@ -280,15 +313,15 @@ $app_uuid = generateUUID();
 // Store in DB
 try {
     $stmt = $pdo->prepare("INSERT INTO apps (uuid, prompt, image_url, sponsor, short_code, user_id, full_prompt) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$app_uuid, $prompt, $image_url, $sponsor, $short_code, $user_id, $full_prompt]);
+    $stmt->execute([$app_uuid, $final_prompt_text, $image_url, $sponsor_name, $short_code, $user_id, $full_prompt_json]);
     
     echo json_encode([
         'success' => true,
         'app' => [
             'uuid' => $app_uuid,
-            'prompt' => $prompt,
+            'prompt' => $final_prompt_text,
             'image_url' => $image_url,
-            'sponsor' => $sponsor,
+            'sponsor' => $sponsor_name,
             'short_code' => $short_code,
             'share_url' => "https://" . $_SERVER['HTTP_HOST'] . "/app/" . $short_code
         ]

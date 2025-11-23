@@ -176,6 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('prompt', prompt);
             formData.append('sponsor', selectedSponsor);
 
+            const appIdInput = document.getElementById('appId');
+            if (appIdInput) {
+                formData.append('app_id', appIdInput.value);
+            }
+
             // Append all images
             selectedImageFiles.forEach((file, index) => {
                 formData.append('images[]', file);
