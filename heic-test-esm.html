@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>HEIC Test - Correct Implementation</title>
+</head>
+
+<body>
+    <h1>HEIC to JPEG Test (Correct Implementation)</h1>
+    <input type="file" id="fileInput" accept=".heic,.heif" multiple>
+    <div id="result"></div>
+    <div id="images"></div>
+
+    <script type="module">
+        import heicTo from 'https://cdn.jsdelivr.net/npm/heic-to@1.0.12/+esm';
+
+        console.log('heicTo loaded:', heicTo);
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            const result = document.getElementById('result');
+            const imagesDiv = document.getElementById('images');
+
+            result.textContent = 'Converting ' + files.length + ' file(s)...';
+            imagesDiv.innerHTML = '';
+
+            for (const file of files) {
+                try {
+                    console.log('Converting:', file.name);
+
+                    const convertedBlob = await heicTo({
+                        blob: file,
+                        type: 'image/jpeg',
+                        quality: 0.9
+                    });
+
+                    const url = URL.createObjectURL(convertedBlob);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '300px';
+                    img.style.margin = '10px';
+                    imagesDiv.appendChild(img);
+
+                    console.log('Success:', file.name, 'from', file.size, 'to', convertedBlob.size, 'bytes');
+
+                } catch (err) {
+                    console.error('Error converting', file.name, ':', err);
+                    result.textContent += '\nError: ' + file.name + ' - ' + err.message;
+                }
+            }
+
+            result.textContent = 'Conversion complete!';
+        });
+    </script>
+</body>
+
+</html>

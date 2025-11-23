@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HEIC Test</title>
+</head>
+<body>
+    <h1>HEIC to JPEG Test</h1>
+    <input type="file" id="fileInput" accept=".heic,.heif">
+    <div id="result"></div>
+    <img id="preview" style="max-width: 500px;">
+
+    <script src="https://cdn.jsdelivr.net/npm/heic-to@1.0.12/dist/heic-to.min.js"></script>
+    <script>
+        console.log('heicTo available?', typeof heicTo);
+        console.log('window.heicTo available?', typeof window.heicTo);
+        console.log('window object keys:', Object.keys(window).filter(k => k.toLowerCase().includes('heic')));
+        
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const result = document.getElementById('result');
+            result.textContent = 'Converting...';
+            
+            try {
+                console.log('File:', file.name, file.type);
+                
+                // Try different ways the library might be exposed
+                let convertFn;
+                if (typeof heicTo !== 'undefined') {
+                    convertFn = heicTo;
+                } else if (typeof window.heicTo !== 'undefined') {
+                    convertFn = window.heicTo;
+                } else {
+                    throw new Error('heic-to library not found!');
+                }
+                
+                const blob = await convertFn({
+                    blob: file,
+                    type: 'image/jpeg',
+                    quality: 0.9
+                });
+                
+                const url = URL.createObjectURL(blob);
+                document.getElementById('preview').src = url;
+                result.textContent = 'Success! Converted from ' + file.size + ' to ' + blob.size + ' bytes';
+                
+            } catch (err) {
+                console.error('Error:', err);
+                result.textContent = 'Error: ' + err.message;
+            }
+        });
+    </script>
+</body>
+</html>

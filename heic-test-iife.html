@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>HEIC Test - IIFE Version</title>
+</head>
+
+<body>
+    <h1>HEIC to JPEG Test (IIFE)</h1>
+    <input type="file" id="fileInput" accept=".heic,.heif" multiple>
+    <div id="result"></div>
+    <div id="images"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/heic-to@1.3.0/dist/iife/heic-to.js"></script>
+    <script>
+        console.log('window.heicTo:', typeof window.heicTo);
+        console.log('heicTo:', typeof heicTo);
+        console.log('Window keys with heic:', Object.keys(window).filter(k => k.toLowerCase().includes('heic')));
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            const result = document.getElementById('result');
+            const imagesDiv = document.getElementById('images');
+
+            result.textContent = 'Converting ' + files.length + ' file(s)...';
+            imagesDiv.innerHTML = '';
+
+            for (const file of files) {
+                try {
+                    console.log('Converting:', file.name);
+
+                    const convertedBlob = await heicTo({
+                        blob: file,
+                        type: 'image/jpeg',
+                        quality: 0.9
+                    });
+
+                    const url = URL.createObjectURL(convertedBlob);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '300px';
+                    img.style.margin = '10px';
+                    imagesDiv.appendChild(img);
+
+                    console.log('Success:', file.name, 'from', file.size, 'to', convertedBlob.size, 'bytes');
+                    result.textContent = 'Conversion complete!';
+
+                } catch (err) {
+                    console.error('Error converting', file.name, ':', err);
+                    result.textContent += '\nError: ' + file.name + ' - ' + err.message;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
