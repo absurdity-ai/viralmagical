@@ -39,7 +39,8 @@
                 <div class="step active" data-step="1">1. Format</div>
                 <div class="step" data-step="2">2. Inputs</div>
                 <div class="step" data-step="3">3. Mapping</div>
-                <div class="step" data-step="4">4. Publish</div>
+                <div class="step" data-step="4">4. Preview</div>
+                <div class="step" data-step="5">5. Publish</div>
             </div>
 
             <!-- STEP 1: FORMAT -->
@@ -51,7 +52,10 @@
                 
                 <div class="form-group">
                     <label>App Name</label>
-                    <input type="text" id="appName" placeholder="e.g., Cyberpunk ID Card, 3-Panel Comic...">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="appName" placeholder="e.g., Cyberpunk ID Card, 3-Panel Comic...">
+                        <button id="magicFillBtn" class="btn-secondary" style="white-space: nowrap;">✨ Magic Auto-Fill</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -129,14 +133,54 @@
 
                 <div class="nav-buttons">
                     <button class="btn-secondary prev-step" data-prev="2">← Back</button>
-                    <button class="btn-primary next-step" data-next="4">Next: Review & Publish →</button>
+                    <button class="btn-primary next-step" data-next="4">Next: Preview →</button>
                 </div>
             </div>
 
-             <!-- STEP 4: PUBLISH -->
-             <div class="step-content hidden" id="step-4">
+            <!-- STEP 4: PREVIEW (NEW) -->
+            <div class="step-content hidden" id="step-4">
                 <div class="section-header">
-                    <h2>Step 4: Publish</h2>
+                    <h2>Step 4: Preview Your Generator</h2>
+                    <p>Test semantic consistency before publishing.</p>
+                </div>
+
+                <div class="preview-config">
+                    <div id="previewInputsContainer">
+                        <!-- Dynamic Preview Inputs will be rendered here -->
+                    </div>
+                    <button id="generatePreviewBtn" class="btn-primary cta-button">
+                        <span class="btn-text">Generate Preview</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                </div>
+
+                <div id="previewResults" class="hidden">
+                    <h3>Preview Results</h3>
+                    <div class="preview-strip" id="previewStrip">
+                        <!-- Images go here -->
+                    </div>
+                    
+                    <div class="rating-panel">
+                        <h4>How did this generator perform?</h4>
+                        <div class="checklist">
+                            <label><input type="checkbox"> Identity drift: character changed</label>
+                            <label><input type="checkbox"> Style drift: art not consistent</label>
+                            <label><input type="checkbox"> Caption mismatch: tone incorrect</label>
+                            <label><input type="checkbox"> Looks correct</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn-secondary prev-step" data-prev="3">← Back</button>
+                    <button class="btn-primary next-step" data-next="5">Next: Publish →</button>
+                </div>
+            </div>
+
+             <!-- STEP 5: PUBLISH -->
+             <div class="step-content hidden" id="step-5">
+                <div class="section-header">
+                    <h2>Step 5: Publish</h2>
                     <p>Review your app and launch it.</p>
                 </div>
 
@@ -160,7 +204,7 @@
                 </div>
 
                 <div class="nav-buttons">
-                    <button class="btn-secondary prev-step" data-prev="3">← Back</button>
+                    <button class="btn-secondary prev-step" data-prev="4">← Back</button>
                     <button id="publishBtn" class="btn-primary cta-button">
                         <span class="btn-text">🚀 PUBLISH APP</span>
                         <div class="loader hidden"></div>

@@ -45,3 +45,17 @@ CREATE TABLE IF NOT EXISTS app_remixes (
     INDEX idx_original (original_app_id),
     INDEX idx_remix (remix_app_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- API Logs table: stores all API calls for monitoring and analytics
+CREATE TABLE IF NOT EXISTS api_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    endpoint VARCHAR(50) NOT NULL,
+    prompt TEXT,
+    response TEXT,
+    token_count INT DEFAULT NULL,
+    model VARCHAR(50) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_endpoint (endpoint),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

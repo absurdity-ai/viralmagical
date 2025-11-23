@@ -299,6 +299,7 @@
 .hidden {
     display: none !important;
 }
+
 /* Mapping Help */
 .mapping-help {
     background: rgba(165, 243, 252, 0.1);
@@ -320,4 +321,209 @@
 
 .mapping-help em {
     color: rgba(255, 255, 255, 0.6);
+}
+
+/* Preview Section */
+.preview-config {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+    border: 1px solid rgba(165, 243, 252, 0.1);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+.preview-config h3 {
+    color: rgba(165, 243, 252, 0.9);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+/* Enhanced File Input Styling */
+.preview-input[type="file"] {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    color: #fff;
+    border: 2px dashed rgba(165, 243, 252, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.preview-input[type="file"]:hover {
+    border-color: rgba(165, 243, 252, 0.6);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.preview-input[type="file"]::file-selector-button {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 10px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.preview-input[type="file"]::file-selector-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+/* Preview Results */
+#previewResults {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#previewResults h3 {
+    color: rgba(165, 243, 252, 0.9);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.preview-strip {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 20px 5px;
+    margin-bottom: 25px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.preview-strip::-webkit-scrollbar {
+    height: 8px;
+}
+
+.preview-strip::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.preview-strip::-webkit-scrollbar-thumb {
+    background: rgba(165, 243, 252, 0.3);
+    border-radius: 4px;
+}
+
+.preview-strip::-webkit-scrollbar-thumb:hover {
+    background: rgba(165, 243, 252, 0.5);
+}
+
+.preview-image {
+    height: 250px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(165, 243, 252, 0.2);
+    transition: all 0.3s ease;
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.preview-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 30px rgba(165, 243, 252, 0.3);
+    border-color: rgba(165, 243, 252, 0.5);
+}
+
+/* Rating Panel */
+.rating-panel {
+    background: linear-gradient(135deg, rgba(165, 243, 252, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid rgba(165, 243, 252, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.rating-panel h4 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #a5f3fc;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.checklist {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.checklist label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.checklist label:hover {
+    background: rgba(165, 243, 252, 0.1);
+    transform: translateX(3px);
+}
+
+.checklist input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #a5f3fc;
+    cursor: pointer;
+}
+
+/* Generate Preview Button Enhancement */
+#generatePreviewBtn {
+    width: 100%;
+    margin-top: 20px;
+    font-size: 1.1rem;
+    padding: 15px 30px;
+}
+
+#generatePreviewBtn .loader {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

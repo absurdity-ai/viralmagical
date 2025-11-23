@@ -159,6 +159,10 @@ if ($app_id && isset($image_apps[$app_id])) {
         }
     }
     
+    // CLEANUP: Remove any remaining placeholders (e.g. text inputs we couldn't fill)
+    // This prevents "featuring [Name]" artifacts.
+    $template = preg_replace('/\[.*?\]/', '', $template);
+    
     // Append User's "Vibe" / Extra Details
     if (!empty($prompt)) {
         $template .= " " . $prompt;
@@ -221,6 +225,8 @@ $headers = [
     "Content-Type: application/json"
 ];
 
+require_once '../logger.php';
+
 // Submit to Queue
 $ch = curl_init($api_url);
 curl_setopt($ch, CURLOPT_POST, 1);
@@ -230,6 +236,9 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
+
+// Log the call
+logApiCall('create_image', $full_prompt_json, $response, 'flux-pro');
 
 if ($http_code !== 200 && $http_code !== 201 && $http_code !== 202) {
      echo json_encode(['success' => false, 'error' => 'Failed to submit to queue: ' . $response]);

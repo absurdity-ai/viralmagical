@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
         step: 1,
         panels: [{ id: 1, name: 'Panel 1' }],
         inputs: [{ id: 1, role: 'character', label: 'Character Image', type: 'image', required: true }],
-        mapping: {}
+        mapping: {},
+        previewValues: {} // Store preview input values if needed, or just read from DOM
     };
 
     // DOM Elements
@@ -21,7 +22,123 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mappingContainer = document.getElementById('mappingContainer');
 
+    const previewInputsContainer = document.getElementById('previewInputsContainer');
+    const generatePreviewBtn = document.getElementById('generatePreviewBtn');
+    const previewResults = document.getElementById('previewResults');
+    const previewStrip = document.getElementById('previewStrip');
+
     const publishBtn = document.getElementById('publishBtn');
+    const magicFillBtn = document.getElementById('magicFillBtn');
+
+    // --- Magic Auto-Fill ---
+    if (magicFillBtn) {
+        magicFillBtn.addEventListener('click', async () => {
+            const appName = document.getElementById('appName').value.trim();
+            const appDesc = document.getElementById('appDescription').value.trim();
+
+            if (!appName) {
+                alert('Please enter an App Name first (e.g., "Pokemon Card").');
+                return;
+            }
+
+            magicFillBtn.disabled = true;
+            magicFillBtn.textContent = '✨ Generating...';
+
+            try {
+                const response = await fetch('api/generate_recipe.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appName, description: appDesc })
+                });
+                const result = await response.json();
+
+                if (result.success && result.recipe) {
+                    applyRecipe(result.recipe);
+                    alert('✨ Magic Recipe Applied! Check Inputs and Mapping.');
+                } else {
+                    alert('Error generating recipe: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Network error.');
+            } finally {
+                magicFillBtn.disabled = false;
+                magicFillBtn.textContent = '✨ Magic Auto-Fill';
+            }
+        });
+    }
+
+    function applyRecipe(recipe) {
+        // 1. Set Inputs
+        state.inputs = recipe.inputs.map((i, idx) => ({
+            id: idx + 1,
+            role: i.role,
+            label: i.label,
+            type: i.type || 'image',
+            required: i.required !== false
+        }));
+
+        // Re-render inputs UI (simple way: clear and add)
+        inputsContainer.innerHTML = '';
+        state.inputs.forEach(input => {
+            const div = document.createElement('div');
+            div.className = 'input-item';
+            div.dataset.id = input.id;
+            div.innerHTML = `
+                <div class="input-header">
+                    <span class="input-number">Input ${input.id}</span>
+                    <button class="btn-icon remove-input">×</button>
+                </div>
+                <div class="input-row">
+                    <input type="text" class="input-role" placeholder="Role ID" value="${input.role}">
+                    <input type="text" class="input-label" placeholder="User Label" value="${input.label}">
+                </div>
+                <div class="input-row">
+                    <select class="input-type">
+                        <option value="image" ${input.type === 'image' ? 'selected' : ''}>Image</option>
+                        <option value="text" ${input.type === 'text' ? 'selected' : ''}>Text</option>
+                    </select>
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="input-required" ${input.required ? 'checked' : ''}> Required
+                    </label>
+                </div>
+            `;
+            inputsContainer.appendChild(div);
+        });
+        updateInputNumbers();
+
+        // 2. Set Panels & Mapping
+        state.panels = recipe.panels.map((p, idx) => ({
+            id: idx + 1,
+            name: p.name || `Panel ${idx + 1}`
+        }));
+
+        // Re-render panels UI
+        panelsContainer.innerHTML = '';
+        state.panels.forEach(panel => {
+            const div = document.createElement('div');
+            div.className = 'panel-item';
+            div.dataset.id = panel.id;
+            div.innerHTML = `
+                <span class="panel-number">${panel.id}</span>
+                <input type="text" class="panel-name" placeholder="Section Name" value="${panel.name}">
+                <button class="btn-icon remove-panel">×</button>
+            `;
+            panelsContainer.appendChild(div);
+        });
+        updatePanelNumbers();
+
+        // 3. Set Mapping State
+        state.mapping = {};
+        recipe.panels.forEach((p, idx) => {
+            state.mapping[idx + 1] = p.prompt;
+        });
+
+        // If we are on step 3, re-render mapping
+        if (state.step === 3) {
+            renderMapping();
+        }
+    }
 
     // --- Navigation ---
     function goToStep(stepNum) {
@@ -41,7 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Trigger logic for specific steps
         if (state.step === 3) renderMapping();
-        if (state.step === 4) renderReview();
+        if (state.step === 4) renderPreview();
+        if (state.step === 5) renderReview();
     }
 
     nextBtns.forEach(btn => {
@@ -105,6 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const prompt = item.querySelector('.mapping-prompt').value;
                 state.mapping[panelId] = prompt;
             });
+        }
+        if (step === 4) {
+            // Preview step validation (optional)
+            // Maybe require at least one preview? Nah, let them skip if they want.
         }
         return true;
     }
@@ -213,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><em>Bad:</em> [character]</p>
                     <p><em>Good:</em> A 90s anime style trading card featuring [character] in a dynamic pose...</p>
                 </div>
-                <textarea class="mapping-prompt" placeholder="Describe the scene... e.g., A cinematic shot of [character]..."></textarea>
+                <textarea class="mapping-prompt" placeholder="Describe the scene... e.g., A cinematic shot of [character]...">${state.mapping[panel.id] || ''}</textarea>
                 <div class="mapping-tags">
                     ${tagsHtml}
                 </div>
@@ -237,7 +359,106 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Step 4: Review & Publish ---
+    // --- Step 4: Preview ---
+    function renderPreview() {
+        previewInputsContainer.innerHTML = '';
+
+        if (state.inputs.length === 0) {
+            previewInputsContainer.innerHTML = '<p>No inputs defined.</p>';
+            return;
+        }
+
+        state.inputs.forEach(input => {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label>${input.label} (${input.role})</label>
+                ${input.type === 'image'
+                    ? `<input type="file" class="preview-input" data-role="${input.role}" accept="image/*">`
+                    : `<input type="text" class="preview-input" data-role="${input.role}" placeholder="Enter test value">`
+                }
+            `;
+            previewInputsContainer.appendChild(div);
+        });
+    }
+
+    if (generatePreviewBtn) {
+        generatePreviewBtn.addEventListener('click', async () => {
+            // Gather inputs
+            const formData = new FormData();
+            const inputs = document.querySelectorAll('.preview-input');
+            let hasError = false;
+
+            inputs.forEach(input => {
+                const role = input.dataset.role;
+                if (input.type === 'file') {
+                    if (input.files.length > 0) {
+                        formData.append(role, input.files[0]);
+                    } else {
+                        // If required, maybe warn? For preview, let's be lenient or strict?
+                        // Let's just warn if it's required.
+                        // Check state.inputs for required status
+                        const def = state.inputs.find(i => i.role === role);
+                        if (def && def.required) {
+                            // alert(`Please provide a value for ${def.label}`);
+                            // hasError = true;
+                        }
+                    }
+                } else {
+                    formData.append(role, input.value);
+                }
+            });
+
+            // Add Mapping and Inputs Definition
+            formData.append('mapping', JSON.stringify(state.mapping));
+            formData.append('inputs', JSON.stringify(state.inputs));
+
+            // Debug logging
+            console.log('Preview Generator - State mapping:', state.mapping);
+            console.log('Preview Generator - State inputs:', state.inputs);
+            console.log('Preview Generator - FormData entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+
+            // UI Loading State
+            generatePreviewBtn.disabled = true;
+            generatePreviewBtn.querySelector('.loader').classList.remove('hidden');
+            generatePreviewBtn.querySelector('.btn-text').textContent = 'Testing consistency...';
+            previewResults.classList.add('hidden');
+            previewStrip.innerHTML = '';
+
+            try {
+                const response = await fetch('api/preview_generator.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show results
+                    previewResults.classList.remove('hidden');
+                    result.images.forEach(url => {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'preview-image';
+                        previewStrip.appendChild(img);
+                    });
+                } else {
+                    alert('Preview failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Network error during preview.');
+            } finally {
+                generatePreviewBtn.disabled = false;
+                generatePreviewBtn.querySelector('.loader').classList.add('hidden');
+                generatePreviewBtn.querySelector('.btn-text').textContent = 'Generate Preview';
+            }
+        });
+    }
+
+    // --- Step 5: Review & Publish ---
     function renderReview() {
         const appName = document.getElementById('appName').value;
         const appDesc = document.getElementById('appDescription').value;

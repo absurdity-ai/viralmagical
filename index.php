@@ -141,7 +141,10 @@ $current_app = $app_id ? ($image_apps[$app_id] ?? null) : null;
                                 <?php endforeach; ?>
                             </div>
                             <!-- Optional Vibe/Details Input -->
-                            <textarea id="promptInput" placeholder="Optional: Add extra details, vibe, or style instructions..." style="height: 80px;"></textarea>
+                            <div style="position: relative;">
+                                <textarea id="promptInput" placeholder="Optional: Add extra details, vibe, or style instructions..." style="height: 80px; width: 100%;"></textarea>
+                                <button id="autoFillBtn" type="button" class="btn-secondary" style="position: absolute; right: 5px; bottom: 5px; padding: 4px 8px; font-size: 0.8rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);">✨ Auto-Fill Details</button>
+                            </div>
                         </div>
 
                         <div class="image-upload-section" style="flex: 1;">
